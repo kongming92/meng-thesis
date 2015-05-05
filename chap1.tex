@@ -18,14 +18,13 @@ Clearly, there is much more to be done in advancing election systems. In this se
 
 \section{A Brief History of Voting Systems}
 
-The first recorded elections occurred in the sixth century BC in ancient Greece, where adult males charged with the responsibility to vote at meetings of the assembly. In the beginning, voting was typically done by a raise of hands in a public space. This developed into the use of colored stones, where voters would select a colored stone out of two possible colors and place it into a central jar. Although we use secret ballots today without a second thought, the first ``secret ballots'' were used in the ancient Greek and Roman civilizations, where records exist of contraptions that allowed a voter to hide the stone as it was deposited into the jar. By the end of the nineteenth century, most Western countries, including the United States, Australia, and France, demanded the use of a secret ballot at elections, and voter privacy was a non-negotiable property of official elections.
+The first recorded elections occurred in the sixth century BC in ancient Greece, where adult males were charged with the responsibility to vote at meetings of the assembly. In the beginning, voting was typically done by a raise of hands in a public space. This developed into the use of colored stones, where voters would select a colored stone out of two possible colors and place it into a central jar. Although we use secret ballots today without a second thought, the first ``secret ballots'' were used in the ancient Greek and Roman civilizations, where records exist of contraptions that allowed a voter to hide the stone as it was deposited into the jar. By the end of the nineteenth century, most Western countries, including the United States, Australia, and France, demanded the use of a secret ballot at elections, and voter privacy was a non-negotiable property of official elections.
 
 As populations grew and election officials looked for ways to make elections more efficient, mechanized voting machines were developed. Lever machines were introduced in New York during the 1892 Election. Punch card systems were introduced in 1965 and were also widely used until they drew sharp criticism during the 2000 Election in Florida. Lever machines, punch cards, and other mechanical and electrical systems such as optical scanners provided different tradeoffs in cost, convenience, efficiency, usability, accessibility, and security. However, in the past decade, growth in both the power and popularity of digital technology has enabled a shift towards electronic voting systems.
 
 \section{The Rise of Electronic Voting}
 
-In the aftermath of the 2000 Election, the Help America Vote Act instituted a series of requirements on the states which aimed to replace punchcard and lever machines, establish standards on voter privacy and accessibility for voters with disabilities, and improve the usability of voting systems. The number of direct-recording electronic (DRE) voting machines grew in response. DREs have a number of advantages over their mechanical counterparts.
-
+In the aftermath of the 2000 Election, the Help America Vote Act instituted a series of requirements on the states which aimed to replace punch card and lever machines, establish standards on voter privacy and accessibility for voters with disabilities, and improve the usability of voting systems. The number of direct-recording electronic (DRE) voting machines grew in response. DREs have a number of advantages over their mechanical counterparts.
 \begin{itemize}
 \item They enable rapid, accurate tallying of votes.
 \item They may include numerous accessibility functions, notably those for the visually impaired.
@@ -55,13 +54,15 @@ Although today's paper ballots provide good privacy, they do so at immense cost 
 
 For electronic voting systems, however, we may achieve verifiability while preserving privacy by using cryptography where appropriate. For example, a vote may be encrypted before being cast; the encrypted votes may then be added homomorphically to yield an encryption of the final election outcome, enabling the election officials to compute the result of an election without revealing any individual votes. Threshold encryption may strengthen this. For example, by requiring that 3 out of 5 election officials be present to obtain the decryption key, we reduce the chance of a malicious election official revealing individual votes.
 
-By introducing a secure, publicly viewable bulletin board, we may achieve verifiability at every stage from when the vote is cast until the election result is revealed. We define an \emph{end-to-end verifiable} voting system as one that satisfies the following properties.
+By introducing a secure, publicly viewable bulletin board, we may achieve verifiability at every stage from when the vote is cast until the election result is revealed.
 
+\begin{definition} An \emph{end-to-end verifiable} voting system is one that satisfies the following properties.
 \begin{itemize}
 \item \emph{Cast-as-intended}. It may be verified that the encryption or other representation of the vote is indeed a representation of the proper vote. Methods to ensure cast-as-intended behavior include Chaum's work [XXX] or the challenge/repsonse method by Neff [YYY].
 \item \emph{Recorded-as-cast}. It may be verified by the voter that her vote is properly taken into account. For example, voters may be given identifiers, and a public bulletin board may contain a listing of voter identifiers and corresponding encrypted votes. We must ensure that this step does not reveal the plaintext vote to an adversary.
 \item \emph{Tallied-as-recorded}. It may be verified by anyone that the final election result is correct given the individual votes. For example, a list of encrypted votes would be homomorphically added, and then the election officials would provide a zero-knowledge proof that the election result corresponds to a decryption of the tallied votes without revealing the decryption key.
 \end{itemize}
+\end{definition}
 
 \section{Conclusion}
 
