@@ -1,5 +1,73 @@
 \chapter{Electronic Voting Systems and Technologies}
 
-TODO: Survey the other electronic voting systems and the crypto used in them, such as helios, votebox, starvote, wombat.
+% TODO: Survey the other electronic voting systems and the crypto used in them, such as helios, votebox, starvote, wombat.
 
-TODO: Survey mixnets for design and performance.
+% TODO: Survey mixnets for design and performance.
+
+% Ballot casting
+
+We now turn to an overview of existing electronic voting systems and technologies, focusing on systems that provide end-to-end verifiability. First, we discuss common design patterns found in end-to-end verifiable voting systems. Then, we present an overview of the cryptographic techniques used to achieve verifiability while maintaining voter privacy. We conclude with studies of voting systems that have been implemented in practice.
+
+\section{Design of End-to-End Voting Systems}
+
+Recall from [REF PREVIOUS CHAPTER] that an \emph{end-to-end verifiable} voting system is defined by three characteristics: cast-as-intended, recorded-as-cast, and tallied-as-recorded. The first two conditions must be verified by the voter herself; our desire for incoercibility requires that no third-party may verify these properties on behalf of the voter. The last condition may be verified by anyone in the public, including someone who did not participate in the election. By verifying all three conditions, any voter may verify that her vote was counted properly and that the declared election outcome is honest.
+
+A typical election consists of two phases.
+\begin{enumerate}
+\item \emph{The voting phase}. In the voting phase, a voter indicates her choices for a given election by casting a ballot. The voter's ballot is typically encrypted; we must provide a proof to the voter that the encryption of the ballot faithfully represents her choices. For the purposes of this discussion, we will assume that the electronic ballot is accompanied by a paper trail and the voter is given a receipt that she may take out of the polling site. We will also assume that privacy is guaranteed inside the voting booth; even with the cooperation of the voter, no one else may observe the voter's actions inside the voting booth.
+\item \emph{The tallying phase}. In the tallying phase, the election officials tally the set of encrypted ballots to produce an election outcome. We require that they do so without compromising the privacy of any individual voter; otherwise, a corrupt election official can act as a coercer. We also require that the election officials provide a proof that the announced election outcome is honest.
+\end{enumerate}
+
+In this section, we examine designs that are used to ensure each of these conditions of an end-to-end verifiable voting system is met.
+
+\subsection{A Secure Bulletin Board}
+
+Central to the design of end-to-end verifiable voting systems is a publicly viewable secure bulletin board. There may be additional restrictions imposed on the actions that may be taken on it; for example, the bulletin board may be append-only.
+
+In general, encrypted votes may be posted to the secure bulletin board along with identifiable information about a voter as long as the ciphertext provides no information about the underlying plaintext to anyone, including the voter herself. This means, for example, that the voter cannot know the randomization values used in the encryption; otherwise, a voter could prove her vote to a coercer.
+
+The secure bulletin board also contains a proof of the election outcome, thereby allowing anyone to verify it. This can be accomplished by listing the plaintext votes after removing the associations between the plaintexts and voter IDs or by posting a zero-knowledge proof of correctness for the decryption of the tallied votes.
+
+\subsection{Cast-as-Intended Behavior}
+
+To ensure cast-as-intended behavior, we use the \emph{``cast or challenge''} protocol as described in [CITE NEFF, BENALOH]. After a voter has made her selections, the system encrypts them using some randomness and prints a receipt containing a cryptographic hash of the ciphertext. The system may additionally print a paper copy of the ballot containing more information which the voter must deposit into the ballot box before leaving.
+
+The voter then has the option to either \emph{cast} the ballot or \emph{challenge} the system.
+\begin{itemize}
+\item The voter chooses to cast her ballot. She deposits the printout into the ballot box.
+\item The voter chooses to challenge the system. In this case, the system reveals the ciphertext and the randomization values used to produce it. The voter can verify that encryption of her vote with the given randomization produces the desired ciphertext and that the commitment to the ciphertext on the printout is correct. Should the voter choose this option, the ballot is spoiled. She must ask the system for a new randomized encryption of her selection, with which she has the option to cast or challenge again.
+\end{itemize}
+
+In this scheme, the system must output a commitment to some ciphertext before it knows whether the voter will choose to cast or challenge. A skeptical voter may choose to challenge multiple times, thereby increasing the probability of catching a malicious system. Because of our privacy assumptions about the polling site, no one else may observe the voter while she issues a challenge to the system. However, a ballot that the voter challenges must be spoiled because the challenge process reveals how the ciphertext is constructed; a voter could use this information to prove how she voted after leaving the polling site if the encrypted votes are publicly posted.
+
+\subsection{Recorded-as-Cast Behavior}
+
+To ensure recorded-as-cast behavior, we provide the voter with a way to check that her vote is accurately recorded on the secure bulletin board. Using her paper receipt, the voter can find her voter ID on the secure bulletin board and verify that the hash value of the posted ciphertext corresponds to the hash value on her receipt. Combined with the cast or challenge protocol of the previous section, the voter can verify that her selection has been correctly recorded on the secure bulletin board. However, she cannot prove to anyone how she voted with just the ciphertext and corresponding hash value.
+
+\subsection{Tallied-as-Recorded Behavior}
+
+To ensure tallied-as-recorded behavior, the system provides a proof that the encrypted votes recorded on the secure bulletin board correspond to the election outcome. In general, there are two ways to accomplish this: either the ciphertexts are combined to produce the election tally using homormorphic encryption, or the ciphertexts are shuffled and then decrypted so they cannot be traced back to the voters that produced them.
+
+\subsubsection{Homomorphic Encryption}
+
+In a \emph{homomorphic encryption} scheme, a set of operations may be performed on ciphertexts to produce the encrypted result of a (possibly different) set of operations on the underlying plaintexts without the need for decryption. The usefulness of homomorphic encryption is immediately apparent in a cryptographic voting system: ciphertexts corresponding to the selections of individual voters may be tallied to yield an encryption of the election outcome without requiring that the individual votes be decrypted. The exponential El Gamal public-key encryption is one example of a cryptosystem that supports homomorphic encryption.
+\begin{definition}
+\textbf{(Exponential El Gamal)}
+\begin{itemize}
+\item \textbf{Key Generation.} Given a group $G$ with order $q$ and generator $g$, which are public parameters, choose the secret key $k \xleftarrow{R} \{1, \cdots, q-1\}$ and the public key $y = g^k$.
+\item \textbf{Encryption.} For each plaintext message $m$, select $r \xleftarrow{R} \{1, \cdots, q-1\}$ and construct the ciphertext $(c_1, c_2) = (g^r, g^m y^r)$.
+\item \textbf{Decryption.} Given a ciphertext $(c_1, c_2)$, calculate
+\begin{align*}
+\log_g\left((c_1^k)^{-1} c_2\right) = \log_g\left((g^{kr})^{-1} g^m g^{kr}\right) = m
+\end{align*}
+\item \textbf{Homomorphic Addition of Ciphertexts.} Given two ciphertexts $C_1 = (g^{r_1}, m_1 \cdot y^{r_1})$ and $C_2 = (g^{r_2}, m_2 \cdot y^{r_2})$, componentwise multiplication yields an encryption of the sum of their underlying plaintexts with randomness $r_1 + r_2$.
+\begin{align*}
+C_1 \times C_2 &= (g^{r_1}, g^{m_1} y^{r_1}) \times (g^{r_2}, g^{m_2} y^{r_2}) \\
+&= (g^{r_1 + r_2}, g^{m_1 + m_2} y^{r_1 + r_2})
+\end{align*}
+\end{itemize}
+\end{definition}
+
+After the votes
+
+
