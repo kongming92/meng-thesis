@@ -46,16 +46,27 @@ To ensure recorded-as-cast behavior, we provide the voter with a way to check th
 
 \subsection{Tallied-as-Recorded Behavior}
 
-To ensure tallied-as-recorded behavior, the system provides a proof that the encrypted votes recorded on the secure bulletin board correspond to the election outcome. In general, there are two ways to accomplish this: either the ciphertexts are combined to produce the election tally using homormorphic encryption, or the ciphertexts are shuffled and then decrypted so they cannot be traced back to the voters that produced them.
+To ensure tallied-as-recorded behavior, the system provides a proof that the encrypted votes recorded on the secure bulletin board correspond to the election outcome. In general, there are two ways to accomplish this: either the ciphertexts are combined to produce the election tally using homormorphic encryption, or the ciphertexts are shuffled and then decrypted so they cannot be traced back to the voters that produced them. Homomorphic encryption allows us to tally the votes without having to decrypt any individual vote, thereby maintaining voter privacy. Mixnets shuffle the input list of votes so that the output list cannot be traced back to the inputs; the output list may then be decrypted and the plaintexts posted on the secure bulletin board so that anyone may verify the election tally. Sections [REF NEXT 2 SECTIONS] describe each scheme in greater detail.
 
-\subsubsection{Homomorphic Encryption}
+\subsection{Threshold Encryption}
+In general, it is advisable to also use \emph{threshold encryption}, in which a minimum threshold $k$ out of a possible $n$ trustees must agree before decryption can occur. This mitigates the risk that some subset of election officials is corrupt and prevents them from decrypting individual votes.
 
-In a \emph{homomorphic encryption} scheme, a set of operations may be performed on ciphertexts to produce the encrypted result of a (possibly different) set of operations on the underlying plaintexts without the need for decryption. The usefulness of homomorphic encryption is immediately apparent in a cryptographic voting system: ciphertexts corresponding to the selections of individual voters may be tallied to yield an encryption of the election outcome without requiring that the individual votes be decrypted. The exponential El Gamal public-key encryption is one example of a cryptosystem that supports homomorphic encryption.
+One way to share some secret value (such as the secret key) among many parties is to use the method developed by Shamir in [CITE]. To share a secret among $n$ parties with a minimum threshold $k$, we use a polynomial $P$ of degree $k-1$ over a finite field. The secret value is set as $P(0)$; each trustee is given a point $(x, y), x \neq 0$. Because $k$ points are required to reconstruct a polynomial of degree $k-1$, any $k$ trustees will be able to recover the secret key, but fewer trustees will not be able to.
+
+With some encryption schemes, threshold encryption may be enabled even with the use of Shamir secret sharing; for example, [CITE PEDERSEN / GENNARO] provides a way to do this with the El Gamal public-key encryption scheme.
+
+\section{Homomorphic Encryption Schemes}
+
+In a \emph{homomorphic encryption} scheme, a set of operations may be performed on ciphertexts to produce the encrypted result of a (possibly different) set of operations on the underlying plaintexts without the need for decryption. The usefulness of homomorphic encryption is immediately apparent in a cryptographic voting system: ciphertexts corresponding to the selections of individual voters may be tallied to yield an encryption of the election outcome without requiring that the individual votes be decrypted.
+
+\subsection{Exponential El Gamal}
+
+The exponential El Gamal public-key encryption is one example of a cryptosystem that supports homomorphic encryption.
 \begin{definition}
 \textbf{(Exponential El Gamal)}
 \begin{itemize}
-\item \textbf{Key Generation.} Given a group $G$ with order $q$ and generator $g$, which are public parameters, choose the secret key $k \xleftarrow{R} \{1, \cdots, q-1\}$ and the public key $y = g^k$.
-\item \textbf{Encryption.} For each plaintext message $m$, select $r \xleftarrow{R} \{1, \cdots, q-1\}$ and construct the ciphertext $(c_1, c_2) = (g^r, g^m y^r)$.
+\item \textbf{Key Generation.} Given a group $G$ with order $q$ and generator $g$, which are public parameters, choose the secret key $k \xleftarrow{R} \{1, \dotsc, q-1\}$ and the public key $y = g^k$.
+\item \textbf{Encryption.} For each plaintext message $m$, select $r \xleftarrow{R} \{1, \dotsc, q-1\}$ and construct the ciphertext $(c_1, c_2) = (g^r, g^m y^r)$.
 \item \textbf{Decryption.} Given a ciphertext $(c_1, c_2)$, calculate
 \begin{align*}
 \log_g\left((c_1^k)^{-1} c_2\right) = \log_g\left((g^{kr})^{-1} g^m g^{kr}\right) = m
@@ -68,6 +79,48 @@ C_1 \times C_2 &= (g^{r_1}, g^{m_1} y^{r_1}) \times (g^{r_2}, g^{m_2} y^{r_2}) \
 \end{itemize}
 \end{definition}
 
-After the votes
+\subsubsection{Tallying and Proof of Decryption}
+
+After the votes have been tallied via homomorphic addition, the resulting ciphertext is decrypted to yield the sum of all the votes. This decrypted sum is then posted to the secure bulletin board and should be consistent with the declared election outcome. Finally, the system needs to prove that the posted decryption is a proper decryption of the ciphertext without revealing the secret key; otherwise, a voter could use the revealed secret key to prove to a coercer how she voted.
+
+In exponential El Gamal, given public parameter $g$ and public key $y$, we want to show that plaintext $m$ is the proper decryption of ciphertext $(c_1, c_2)$. Recall that a proper encryption of the plaintext $m$ results in ciphertext $(g^r, g^m y^r)$. We divide the second component of the ciphertext by $g^m$ and then construct a proof showing that the result is of the form $(g^r, y^r) = (g^r, (g^x)^r)$. A proof of equality for two discrete logarithms, such as those described in [CHAUM/PEDERSEN] can then be used.
+
+\subsection{Existing Systems Using Homomorphic Encryption}
+
+Many existing end-to-end verifiable voting systems use homomorphic encryption because its implementation is rather straightforward and the cryptographic primitives used are well-supported. Despite starting with mixnets, the Helios system [CITE], which runs in a web browser and is intended for online elections where the threat of coercion is low (e.g. school or club elections), now uses exponential El Gamal. Design proposals for the STAR-Vote system in Austin County, TX [CITE] use very similar techniques as those discussed here, including the cast-or-challenge protocol, encrypted votes posted on a publicly-viewable secure bulletin board, and homomorphic tallying with exponential El Gamal. In these systems, the weaknesses of using homomorphic tallying, including the computational cost of modular exponentiation used in El Gamal and the difficulty of supporting write-in candidates, are offset by the simpplicity and clarity of the design and implementation.
+
+\section{Mixnets}
+
+Another way of verifying that the election result accurately reflects the set of encrypted votes is to use a \emph{mixnet}. First described by Chaum in [CITE CHAUM] as a method to ensure anonymous communication, mixnets secretly permute the list of inputs so that they cannot be associated with the list of outputs. A mixnet may involve many \emph{mixservers} that are each a part of the overall chain; each mixserver secretly permutes the output of the previous mixserver, and sends its output to the next mixserver to be permuted.
+
+In the context of elections, the input to the mixnet is the list of encrypted votes, and the output is a list of the same votes, encrypted differently and in some different order. We can decrypt the ciphertexts that are output from the mixnet and post the resulting plaintexts to the secure bulletin board along with proofs of correct decryption. This allows anyone to check that the plaintexts produce the election outcome while making it impossible to associate each any plaintext vote with a voter.
+
+The encryption of the votes must change between the input and output; we cannot simply shuffle the encrypted values. Otherwise an adversary could easily compare the input and output lists, find identical ciphertexts, and associate them with the voter IDs which are posted alongside the input ciphertexts on the secure bulletin board.
+
+\subsection{Decryption and Reencryption Mixnets}
+
+There are two general types of mixnets which accomplish our goals: \emph{decryption mixnets} and \emph{reencryption mixnets}.
+\begin{itemize}
+\item In a \emph{decryption mixnet}, a message is encrypted with the public key of each mixserver in the reverse order of traversal. In a system with $n$ mixservers, the input to the mixnet for message $m$ is $E_{K_n}(E_{K_{n-1}}( \dots (E_{K_1}(m))))$, where $E_{K_i}$ denotes encryption using the public key of the $i$th mixserver. At each mixserver, one layer of encryption is removed and the list of messages is shuffled before being sent to the next mixserver. The mixnet outputs a list of decrypted messages whose ordering cannot be traced back to the input ordering. Decryption mixnets are commonly used to anonymize routing in designs known as ``onion routing'', where each message is encrypted repeatedly like the layers of an onion, and each mixserver ``peels off'' a layer until the plaintext message is reached.
+\item In a \emph{reencryption mixnet}, a message is encrypted once and input into the mixnet. At each mixserver, messages are reencrypted using a public-key encryption scheme that supports reencryption and then shuffled. An example of a public-key encryption scheme that supports reencryption is exponential El Gamal, as discussed in the [REF PREV SECTION], by homomorphically combining the message to be reencrypted with an encryption of the ``zero message''. This similarly achieves our goals: the underlying plaintexts do not change through the mixnet, but their ciphertext representations and ordering are changed in a way that makes the outputs untraceable to the inputs.
+\end{itemize}
+
+\subsection{Verifiable Mixnets}
+
+A malicious mixserver might ignore the inputs given to it and send whatever list of encrypted votes it desires to the next mixserver in the chain. If the malicious mixserver were the last mixserver in the chain, it could ignore all of the ballots, decide the election outcome, and construct an output list that matches that outcome.
+
+Thus, in addition to anonymity, we require that our mixnets are \emph{verifiable}. A verifiable mixnet is one which can produce a proof that the underlying plaintexts of the outputs are the same as the underlying plaintexts of the inputs without revealing the association between input and output. Verifiable mixnets have been studied for decades, beginning with Chaum's work in 1981 [CITE]. Here we survey some of the developments in verifiable mixnets since Chaum's work that influence the design of our split-value voting system.
+
+\subsubsection{Attacks on Malleable Inputs}
+
+\subsubsection{Universal Verifiability}
+
+\subsubsection{Randomized Partial Checking}
+
+\subsection{Existing Systems Using Mixnets}
+
+
+
+
 
 

@@ -41,7 +41,7 @@ When the voter's vote $w$ is cast on her device (e.g. a tablet), it is broken in
 A triplet $S' = (x', y', z')$ is an \emph{obfuscation} of $S = (x, y, z)$ if $x'+y'+z' = x+y+z \bmod M$.
 \end{definition}
 
-The first column of servers agree upon a triplet of values $(p, q, r)$ such that $p + q + r = 0 \bmod M$ for each vote. The first row then computes $x' = x+p \bmod M$, the second row computes $y' = y+q \bmod M$, and so on. The column of servers then agree upon a random permutation $\pi : \{1, \cdots, n\} \to \{1, \cdots, n\}$. Each server transmits the permuted obfuscated values to the next column in the same row: $P_{1,1}$ transmits $x'_{\pi(1)}, \cdots, x'_{\pi(n)}$ to $P_{1,2}$, $P_{2,1}$ transmits the permuted $y'$ values to $P_{2,2}$, and so on.
+The first column of servers agree upon a triplet of values $(p, q, r)$ such that $p + q + r = 0 \bmod M$ for each vote. The first row then computes $x' = x+p \bmod M$, the second row computes $y' = y+q \bmod M$, and so on. The column of servers then agree upon a random permutation $\pi : \{1, \dotsc, n\} \to \{1, \dotsc, n\}$. Each server transmits the permuted obfuscated values to the next column in the same row: $P_{1,1}$ transmits $x'_{\pi(1)}, \dotsc, x'_{\pi(n)}$ to $P_{1,2}$, $P_{2,1}$ transmits the permuted $y'$ values to $P_{2,2}$, and so on.
 
 The second and third columns of mixservers repeat this process, and the results of the final obfuscation and permutation are posted to the secure bulletin board. Given a security parameter $m$, this process of obfuscation and permutation across each column of the mixnet is performed $2m$ times. In our current implementation, $2m = 24$.
 

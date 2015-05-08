@@ -120,6 +120,12 @@ In the previous section, we simulated elections with 1000 voters because it prov
 
 [TODO:TABLE] shows the performance of the system with the number of repetitions ($2m$) set to 4, 8, 16, and 24. Although the runtime grows very slightly sublinearly as the number of repetitions, reducing the number of repetitions may reduce the runtime significantly.
 
+\section{Comparison with Other Systems}
+
+\subsection{Performance Comparisons}
+
+\subsection{Fault Tolerance}
+
 \section{Conclusion}
 
 In this section, we examined the performance of the split-value system implementation. Benchmarking functions available for cryptographic primitives led to the usage of the SHA-256 hash function and the HMAC commitment scheme in our implementation. We used the Python profiler to identify areas of the implementation that could yield large performance gains. By leveraging parallelism, reducing the wait time on sockets and requests to the secure bulletin board, and a more efficient JSON serializer, our optimized system runs in less than one-tenth the time of the reference implementation.
