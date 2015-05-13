@@ -51,7 +51,7 @@ To ensure tallied-as-recorded behavior, the system provides a proof that the enc
 \subsection{Threshold Encryption}
 In general, it is advisable to also use \emph{threshold encryption}, in which a minimum threshold $k$ out of a possible $n$ trustees must agree before decryption can occur. This mitigates the risk that some subset of election officials is corrupt and prevents them from decrypting individual votes.
 
-One way to share some secret value (such as the secret key) among many parties is to use the method developed by Shamir in [CITE]. To share a secret among $n$ parties with a minimum threshold $k$, we use a polynomial $P$ of degree $k-1$ over a finite field. The secret value is set as $P(0)$; each trustee is given a point $(x, y), x \neq 0$. Because $k$ points are required to reconstruct a polynomial of degree $k-1$, any $k$ trustees will be able to recover the secret key, but fewer trustees will not be able to.
+One way to share some secret value (such as the secret key) among many parties is to use the method developed by Shamir in [CITE]. To share a secret among $n$ parties with a minimum threshold $k$, we use a polynomial $P$ of degree $k-1$ over a finite field. The secret value is set as $P(0)$; each trustee is given a point $(x, y)$ for $x \neq 0$. Because $k$ points are required to reconstruct a polynomial of degree $k-1$, any $k$ trustees will be able to recover the secret key, but fewer trustees will not be able to.
 
 With some encryption schemes, threshold encryption may be enabled even with the use of Shamir secret sharing; for example, [CITE PEDERSEN / GENNARO] provides a way to do this with the El Gamal public-key encryption scheme.
 
@@ -111,13 +111,15 @@ A malicious mixserver might ignore the inputs given to it and send whatever list
 
 Thus, in addition to anonymity, we require that our mixnets are \emph{verifiable}. A verifiable mixnet is one which can produce a proof that the underlying plaintexts of the outputs are the same as the underlying plaintexts of the inputs without revealing the association between input and output. Verifiable mixnets have been studied for decades, beginning with Chaum's work in 1981 [CITE]. Here we survey some of the developments in verifiable mixnets since Chaum's work that influence the design of our split-value voting system.
 
-\subsubsection{Attacks on Malleable Inputs}
+\subsubsection{Early Mixnets: Attacks on Malleable Inputs}
 
 \subsubsection{Universal Verifiability}
 
 \subsubsection{Randomized Partial Checking}
 
 \subsection{Existing Systems Using Mixnets}
+
+\section{Conclusion}
 
 
 

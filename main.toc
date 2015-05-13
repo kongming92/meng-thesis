@@ -9,14 +9,19 @@
 \contentsline {subsection}{\numberline {2.1.2}Cast-as-Intended Behavior}{16}
 \contentsline {subsection}{\numberline {2.1.3}Recorded-as-Cast Behavior}{17}
 \contentsline {subsection}{\numberline {2.1.4}Tallied-as-Recorded Behavior}{18}
+\contentsline {subsection}{\numberline {2.1.5}Threshold Encryption}{18}
 \contentsline {section}{\numberline {2.2}Homomorphic Encryption Schemes}{18}
-\contentsline {subsection}{\numberline {2.2.1}Exponential El Gamal}{18}
+\contentsline {subsection}{\numberline {2.2.1}Exponential El Gamal}{19}
 \contentsline {subsubsection}{Tallying and Proof of Decryption}{19}
-\contentsline {subsection}{\numberline {2.2.2}Threshold Encryption}{19}
-\contentsline {subsection}{\numberline {2.2.3}Existing Systems Using Homomorphic Encryption}{20}
+\contentsline {subsection}{\numberline {2.2.2}Existing Systems Using Homomorphic Encryption}{20}
 \contentsline {section}{\numberline {2.3}Mixnets}{20}
-\contentsline {subsection}{\numberline {2.3.1}Types of Mixnets}{20}
-\contentsline {subsection}{\numberline {2.3.2}Verifiable Mixnets}{21}
+\contentsline {subsection}{\numberline {2.3.1}Decryption and Reencryption Mixnets}{21}
+\contentsline {subsection}{\numberline {2.3.2}Verifiable Mixnets}{22}
+\contentsline {subsubsection}{Early Mixnets: Attacks on Malleable Inputs}{22}
+\contentsline {subsubsection}{Universal Verifiability}{22}
+\contentsline {subsubsection}{Randomized Partial Checking}{22}
+\contentsline {subsection}{\numberline {2.3.3}Existing Systems Using Mixnets}{22}
+\contentsline {section}{\numberline {2.4}Conclusion}{22}
 \contentsline {chapter}{\numberline {3}End-to-End Verifiable Voting Using Split-Value Representations}{23}
 \contentsline {section}{\numberline {3.1}The Split-Value Voting System Design}{23}
 \contentsline {subsection}{\numberline {3.1.1}Definitions}{23}
@@ -40,4 +45,10 @@
 \contentsline {subsection}{\numberline {4.3.5}JSON Serialization}{35}
 \contentsline {subsection}{\numberline {4.3.6}Hashing the Secure Bulletin Board}{36}
 \contentsline {section}{\numberline {4.4}Performance Scalability}{37}
-\contentsline {section}{\numberline {4.5}Conclusion}{37}
+\contentsline {section}{\numberline {4.5}Comparison with Other Systems}{37}
+\contentsline {section}{\numberline {4.6}Conclusion}{37}
+\contentsline {chapter}{\numberline {5}Future Work}{39}
+\contentsline {section}{\numberline {5.1}Performance Considerations}{39}
+\contentsline {section}{\numberline {5.2}Fault Tolerance}{40}
+\contentsline {section}{\numberline {5.3}Secure Channels and Key Exchange}{41}
+\contentsline {chapter}{\numberline {6}Conclusion}{43}

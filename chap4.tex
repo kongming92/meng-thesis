@@ -122,9 +122,6 @@ In the previous section, we simulated elections with 1000 voters because it prov
 
 \section{Comparison with Other Systems}
 
-\subsection{Performance Comparisons}
-
-\subsection{Fault Tolerance}
 
 \section{Conclusion}
 
@@ -132,7 +129,7 @@ In this section, we examined the performance of the split-value system implement
 
 With the optimized implementation, an election of one million voters will take between seven and eight hours to mix, prove, tally, and verify. This is a bit more than twice as long as the time generally allotted between the closing of polling sites and the release of election results in the evening news. We hope that further optimization may yield this factor of two to three improvement in the runtime.
 
-Using properly hardware-optimized AES encryption as a commitment scheme has the potential to reduce runtime significantly; according to Intel's measurements, the estimate of 8 million commitments [CITE PAPER] per second can be achieved even with conservative estimates.
+Using properly hardware-optimized AES encryption as a commitment scheme has the potential to reduce runtime significantly; according to Intel's measurements, the estimate of 8 million commitments given in [CITE PAPER] per second can be achieved even with conservative estimates.
 
 In the current implementation, considerable time is spent on repeating the mixing and proof construction for $2m = 24$ times. As mentioned in [LINK TO PREV CHAPTER], this repetition is necessary due to the reduced security in using a Fiat-Shamir hash of the secure bulletin board instead of true randomness. The process may be sped up at least twofold if election officials adopted a true source of randomness during the construction of the proof.
 
