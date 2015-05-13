@@ -54,6 +54,7 @@ As explained in the previous chapter, communication between machines happens via
 \item \texttt{socket.send(string)}. Send data through the socket, and returns the number of bytes sent. \texttt{socket.send} does not guarantee that the all data is sent; the caller must check the return value and retry sending the remaining data if necessary.
 \item \texttt{socket.sendall(string)}. Send data through the socket, and return \texttt{None} on success. Unlike \texttt{socket.send}, \texttt{socket.sendall} guarantees that all data is sent if the function returns successfully.
 \end{itemize}
+
 Due to constraints in the operating system, the value for \texttt{bufsize} used in the \texttt{socket.recv} function is usually 4096 or 8192, corresponding to the maximum length that may be sent via a single call to \texttt{socket.send}. Note that there is not a corresponding \texttt{socket.recvall} function. If a longer message is desired, we must repeatedly call \texttt{socket.recv} until the entire message is received. The reference implementation handled this situation by sleeping for a short amount of time after each call to \texttt{socket.recv} before attempting to receive more data from the socket.
 
 Because \texttt{socket.recv} blocks if the data is not ready yet (up to some timeout), we do not need to sleep to wait for more data; rather, we just need to know how much data to expect and continuously call \texttt{socket.recv} until that length is reached. We define the following higher-level interface for communication over sockets:
@@ -76,7 +77,7 @@ Overall, these optimizations give a $6.1\%$ speedup, mostly in the proof and ver
 
 \subsection{Introducing Parallelism}
 
-No performance analysis is complete without an analysis of the potential for parallelism. Multicore CPUs are now the norm; even a typical laptop that we would expect an election official to own and use in running the system is likely to have at least two CPU cores. Furthermore, in our system, the computation required to mix the votes and construct a proof of the election outcome is distributed across the nine mixsers. We show here that significant parallelism can be leveraged in each of the mix, proof, and verification phases of the system.
+No performance analysis is complete without an analysis of the potential for parallelism. Multicore CPUs are now the norm; even a typical laptop that we would expect an election official to own and use in running the system is likely to have at least two CPU cores. Furthermore, in our system, the computation required to mix the votes and construct a proof of the election outcome is distributed across the nine mixservers. We show here that significant parallelism can be leveraged in each of the mix, proof, and verification phases of the system.
 
 \subsubsection{Parallelism in the Mix and Proof Phases}
 
@@ -100,7 +101,7 @@ Relaxing our requirements on the verifier and introducing parallelism resulted i
 
 \subsection{JSON Serialization}
 
-While the benchmarks in [LINK TO SECTION ABOVE] showed no benefit in switching to the \texttt{simplejson} library, in our system the performance speedup was enormous. By simply switching the serializer library and eliminating indentation and formatting from JSON strings, a 41.5 second ($233\%$) speedup in the proof phase and 2.9 second ($40.5\%$). The overall runtime speedup for the simulation was 45 seconds ($1.26\%$).
+While the benchmarks in [LINK TO SECTION ABOVE] showed no benefit in switching to the \texttt{simplejson} library, in our system the performance speedup was enormous. By simply switching the serializer library and eliminating indentation and formatting from JSON strings, a 41.5 second ($233\%$) speedup in the proof phase and 2.9 second ($40.5\%$). The overall runtime speedup for the simulation was 45 seconds ($126\%$).
 
 \subsection{Hashing the Secure Bulletin Board}
 
@@ -122,6 +123,11 @@ In the previous section, we simulated elections with 1000 voters because it prov
 
 \section{Comparison with Other Systems}
 
+Unfortunately, there exists very little data concerning the performance of end-to-end verifiable electronic voting schemes in general and mixnets in particular. In the original design of the Helios system by Adida, proof generation and verification of a 500 voter election took many hours [CITE HELIOS]. However, Adida notes the potential for using parallelism to achieve speedups. Furthermore, we must keep in mind that computers have become much more powerful since the original design of Helios in 2008: as a rough metric, the cost per GFLOPS (one billion floating-point operations per second) has decreased more than $600 \times$ in the last seven years, while browser implementations of Javascript have continued to improve.
+
+The original design of Scantegrity [CITE SCANTEGRITY 1] claims that the ``necessary Switchboard audit data'' could be produced and verified in a matter of minutes for an election with 32 races and 200,000 ballots. However, it is unclear if this is simply a proof of an honest Switchboard in the election setup phase or if this time includes a proof and verification of the overall election's outcome.
+
+Mixnet designs such as [CITE CHASE] achieve improvements in the asymptotic amount of work done in constructing a proof; however, it is unclear what the performance of a prototype implementation would be.
 
 \section{Conclusion}
 

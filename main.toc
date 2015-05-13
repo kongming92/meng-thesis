@@ -46,9 +46,9 @@
 \contentsline {subsection}{\numberline {4.3.6}Hashing the Secure Bulletin Board}{36}
 \contentsline {section}{\numberline {4.4}Performance Scalability}{37}
 \contentsline {section}{\numberline {4.5}Comparison with Other Systems}{37}
-\contentsline {section}{\numberline {4.6}Conclusion}{37}
-\contentsline {chapter}{\numberline {5}Future Work}{39}
-\contentsline {section}{\numberline {5.1}Performance Considerations}{39}
-\contentsline {section}{\numberline {5.2}Fault Tolerance}{40}
-\contentsline {section}{\numberline {5.3}Secure Channels and Key Exchange}{41}
-\contentsline {chapter}{\numberline {6}Conclusion}{43}
+\contentsline {section}{\numberline {4.6}Conclusion}{38}
+\contentsline {chapter}{\numberline {5}Future Work}{41}
+\contentsline {section}{\numberline {5.1}Performance Considerations}{41}
+\contentsline {section}{\numberline {5.2}Fault Tolerance}{42}
+\contentsline {section}{\numberline {5.3}Secure Channels and Key Exchange}{43}
+\contentsline {chapter}{\numberline {6}Conclusion}{45}

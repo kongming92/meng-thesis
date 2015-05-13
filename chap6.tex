@@ -1,5 +1,5 @@
 \chapter{Conclusion}
 
+In this thesis, we presented a new design for an end-to-end verifiable voting system by introducing the concept of a split-value representation and a split-value commitment. We also introduce a verifiable mixnet design, which when used with split-value commitments, preserves the anonymity of voters. Compared to other designs which achieve the same result, we expect that using relatively inexpensive split-value commitments in the mixnet rather than other, more time-consuming operations such as repeated public-key encryption will yield high performance while maintaining verifiability.
 
-
-As with any candidate system for real-world application, the split-value voting system must not only be correct, but also exhibit good performance, scale as the number of users grows large, and be able to withstand reasonable failures. The work of this thesis builds on the work of [CITE MARCO] in performance tuning a prototype implementation of the design in [CITE RRV]. While
+As with any candidate system for real-world application, the split-value voting system must exhibit not only correctness, but good performance, scalability, and fault tolerance. Based on the performance optimizations and scalability analysis described in this thesis, the potential for additional performance gains, and current work addressing fault tolerance, it is our hope that the split-value voting system may evolve from a theoretically interesting design to a viable implementation used in public elections over the coming years.
