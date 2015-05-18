@@ -32,11 +32,28 @@
 \usepackage{cmap}
 \usepackage[T1]{fontenc}
 \usepackage{amsmath, amssymb, amsthm}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{url}
+
+\newcommand{\afunc}[1]{\operatorname{\mathsf{#1}}}
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}[section]
 
-\DeclareMathOperator{\ElGamalEnc}{ElGamalEnc}
+\lstdefinestyle{base}{
+  language=python,
+  basicstyle=\ttfamily\footnotesize,
+  numbers=none,
+  frame=single,
+  stepnumber=1,
+  rulecolor=\color{black},
+  breaklines=true,
+  captionpos=b
+}
+
+\renewcommand{\lstlistingname}{Figure}
 
 \newcommand{\SV}{\text{SV}}
 \newcommand{\Com}{\text{C}\textsc{om}}
