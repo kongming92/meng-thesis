@@ -12,7 +12,7 @@ Given an election, choose the \emph{representation modulo} $M$ so that any voter
 The \emph{split-value representation} of $x$ modulo $M$ is the pair $\SV(x)=(u,v)$ such that $x = u+v \bmod M$.
 \end{definition}
 
-Note that for a given $x$, knowing the value of one of $u$ or $v$, but not both, reveals no information about $x$. This key property allows us to construct zero-knowledge proofs of equality for two values using their split-value representations, without revealing the actual values themselves.
+Note that for a given $x$, knowing the value of $u$ or $v$, but not both, reveals no information about $x$. This key property allows us to construct zero-knowledge proofs of equality for two values using their split-value representations without revealing the actual values themselves.
 
 \begin{definition}
 A \emph{commitment} to a value $x$ with randomness $r$ is the value $c = \Com(x, r)$ such that $c$ may be ``opened'' to reveal $x$ and $r$. We desire that the $\Com$ function is both hiding and binding. That is, given $c = \Com(x, r)$, no information is gained about $x$, and it is infeasible to produce another $(x', r')$ such that $c = \Com(x', r')$.
@@ -29,7 +29,7 @@ Using split-value commitments, we may construct probabilistic proofs that two va
 \ComSV(x) &= (\Com(u, r), \Com(v, s)) \\
 \ComSV(x') &= (\Com(u', r'), \Com(v', s'))
 \end{align*}
-the prover claims that there exists a value $t$ such that $t = u - u'$ and $t = v' - v$. This can be true if and only if $x = x'$. With probability $1/2$, the examiner asks for the opening of the ``left'' commitments, in which case the prover gives the values $u$, $r$, $u'$, and $r'$. The verifier checks that the values $\Com(u, r)$ and $\Com(u', r')$ are correct and that $t = u - u'$. With probability $1/2$, the examiner asks for the ``right'' commitments, in which case the prover sends the other components of the split-value commitment. Thus, if $x \neq x'$, a dishonest prover can win with probability at most $1/2$.
+the prover claims that there exists a value $t$ such that $t = u - u'$ and $t = v' - v$. This can be true if and only if $x = x'$. The prover reveals the value of $t$ to the examiner. With probability $1/2$, the examiner asks for the opening of the ``left'' commitments, in which case the prover reveals the values $u$, $r$, $u'$, and $r'$. The verifier checks that the values $\Com(u, r)$ and $\Com(u', r')$ are correct and that $t = u - u'$. With probability $1/2$, the examiner asks for the ``right'' commitments, in which case the prover reveals the other components of the split-value commitment. Thus, if $x \neq x'$, a dishonest prover can win with probability at most $1/2$.
 
 \subsection{The Verifiable Mixnet} \label{sv:design:mixnet}
 

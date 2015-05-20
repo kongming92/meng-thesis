@@ -47,7 +47,7 @@ In general, it is advisable to also use \emph{threshold encryption}, in which a 
 
 One way to share some secret value (such as a secret key) among many parties is to use the method developed by Shamir \cite{shamir79}. To share a secret among $n$ trustees with a minimum threshold $k$, we use a polynomial $P$ of degree $k-1$ over a finite field. The secret value is set as $P(0)$; each trustee is given a point $(x, y)$ for $x \neq 0$. Because $k$ points are required to reconstruct a polynomial of degree $k-1$, any $k$ trustees will be able to recover the secret key, but fewer trustees will not be able to.
 
-With some encryption schemes, threshold encryption may be enabled even with the use of Shamir secret sharing; for example, \cite{pedersen91, gennaro} provides a way to do this with the El Gamal public-key encryption scheme.
+With some encryption schemes, threshold encryption may be enabled even without the use of Shamir secret sharing; for example, \cite{pedersen91, gennaro} provides a way to do this with the El Gamal public-key encryption scheme.
 
 \section{Homomorphic Encryption Schemes} \label{evote:homomorphic}
 
@@ -63,7 +63,7 @@ The exponential El Gamal public-key encryption \cite{elgamal} is one example of 
 \item \textbf{Encryption.} For each plaintext message $m$, select $r \xleftarrow{R} \{1, \dotsc, q-1\}$ and construct the ciphertext $(c_1, c_2) = (g^r, g^m y^r)$.
 \item \textbf{Decryption.} Given a ciphertext $(c_1, c_2)$, calculate
 \begin{align*}
-\log_g\left((c_1^k)^{-1} c_2\right) = \log_g\left((g^{kr})^{-1} g^m g^{kr}\right) = m
+\log_g\left((c_1^k)^{-1} c_2\right) = \log_g\left(g^{-kr} g^m g^{kr}\right) = m
 \end{align*}
 \item \textbf{Homomorphic Addition of Ciphertexts.} Given two ciphertexts $C_1 = (g^{r_1}, g^{m_1} y^{r_1})$ and $C_2 = (g^{r_2}, g^{m_2} y^{r_2})$, componentwise multiplication yields an encryption of the sum of their underlying plaintexts with randomness $r_1 + r_2$.
 \begin{align*}
@@ -114,11 +114,15 @@ $$
 y = \prod_{i}{y_i} = g^{\sum_{i}{k_i}}
 $$
 
-At mixserver $m_i$, given ciphertext $c = (c_1, c_2) = (g^r, m \cdot y^r)$, the message is \emph{partially decrypted} by removing the contribution of that mixserver's public key from the joint public key.
+At mixserver $m_i$, given ciphertext $c = (c_1, c_2) = (g^r, m \cdot y^r)$ (note that this is not the homomorphic variant of El Gamal where the second ciphertext component is $g^m y^r$), the message is \emph{partially decrypted} by removing the contribution of that mixserver's public key from the joint public key.
 $$
-\afunc{PartialDec}_{i}(c_1, c_2) = (c_1, c_2 \cdot c_{1}^{-k_i})
+\afunc{PartialDec}_{i}(c) = (c_1, c_2 \cdot c_{1}^{-k_i})
 $$
-The resulting ciphertext is then reencrypted using standard El Gamal reencryption.
+
+The resulting ciphertext is then reencrypted using standard El Gamal reencryption with additional randomness $r'$.
+$$
+\afunc{ReEnc}(c) = (c_1 \cdot g^{r'}, c_2 \cdot y^{r'}) = (g^{r+r'}, m \cdot y^{r+r'})
+$$
 
 Vulnerabilities were discovered in both early mixnet designs; Pfitzmann \cite{pfitzmann90, pfitzmann95} showed that related inputs produced related outputs in the mixnet; by choosing a malicious input that is related to another non-malicious input, an attacker could trace both inputs through the mixnet and discover the identity of the sender of the non-malicious message.
 
@@ -140,7 +144,7 @@ using a scheme such as that described in \cite{chaum-pedersen}.
 
 \subsubsection{Proof of correct reencryption and shuffling}
 
-To prove that it shuffled and reencrypted messages correctly, each mixserver constructs a second shuffle and reencryption. With $50\%$ probability, the verifier asks the mixserver to prove that the second shuffle and reencryption was done correctly by revealing the permutation and randomization values used. The other half of the time, the verifier asks the mixserver to provide the differences in the permutation and randomization values and checks that one set of values may be obtained from the other. Thus, a dishonest mixserver will be caught with $50\%$ probability. This process may be made non-interactive via the Fiat-Shamir heuristic \cite{fiat-shamir}.
+To prove that it shuffled and reencrypted messages correctly, each mixserver constructs a second shuffle and reencryption. With $50\%$ probability, the verifier asks the mixserver to prove that the second shuffle and reencryption was done correctly by revealing the permutation and randomization values used. The other half of the time, the verifier asks the mixserver to construct and reveal a permutation and set of randomization values to go between the primary and secondary shuffles. Thus, a dishonest mixserver will be caught with $50\%$ probability. This process may be made non-interactive via the Fiat-Shamir heuristic \cite{fiat-shamir}.
 
 \subsection{Jakobsson, Juels, and Rivest: Randomized Partial Checking}
 
