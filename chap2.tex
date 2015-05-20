@@ -1,15 +1,15 @@
 \chapter{Electronic Voting Systems and Technologies} \label{evote}
 
-We now turn to an overview of existing electronic voting systems and technologies, focusing on systems that provide end-to-end verifiability. First, we discuss common design patterns found in end-to-end verifiable voting systems. Then, we present an overview of the cryptographic techniques used to achieve verifiability while maintaining voter privacy. We conclude with studies of voting systems that have been implemented in practice.
+We now turn to an overview of existing electronic voting systems and technologies, focusing on systems that provide end-to-end verifiability. First, we discuss common design patterns found in end-to-end verifiable voting systems. Then, we present an overview of homomorphic encryption based designs and mixnets, two methods for achieving privacy with end-to-end verifiability.
 
 \section{Design of End-to-End Voting Systems} \label{evote:design}
 
-Recall from \ref{intro:props} that an \emph{end-to-end verifiable} voting system is defined by three characteristics: cast-as-intended, recorded-as-cast, and tallied-as-recorded. The first two conditions must be verified by the voter herself; our desire for incoercibility requires that no third-party may verify these properties on behalf of the voter. The last condition may be verified by anyone in the public, including someone who did not participate in the election. By verifying all three conditions, any voter may verify that her vote was counted properly and that the declared election outcome is honest.
+Recall from \ref{intro:props} that an \emph{end-to-end verifiable} voting system is defined by three characteristics: verifiably cast-as-intended, verifiably recorded-as-cast, and verifiably tallied-as-recorded. The first two conditions must be verified by the voter herself; our desire for incoercibility requires that no third-party may verify these properties on behalf of the voter. The last condition may be verified by anyone in the public, including someone who did not participate in the election. By verifying all three conditions, any voter may verify that her vote was counted properly and that the declared election outcome is honest.
 
 A typical election consists of two phases.
 \begin{enumerate}
-\item \emph{The voting phase}. In the voting phase, a voter indicates her choices for a given election by casting a ballot. The voter's ballot is typically encrypted; we must provide a proof to the voter that the encryption of the ballot faithfully represents her choices. For the purposes of this discussion, we will assume that the electronic ballot is accompanied by a paper trail and the voter is given a receipt that she may take out of the polling site. We will also assume that privacy is guaranteed inside the voting booth; even with the cooperation of the voter, no one else may observe the voter's actions inside the voting booth.
-\item \emph{The tallying phase}. In the tallying phase, the election officials tally the set of encrypted ballots to produce an election outcome. We require that they do so without compromising the privacy of any individual voter; otherwise, a corrupt election official can act as a coercer. We also require that the election officials provide a proof that the announced election outcome is honest.
+\item \emph{The voting phase}. In the voting phase, a voter indicates her choices for a given election by casting a ballot. The voter's ballot is typically encrypted, and the system must provide a proof to the voter that the encryption of the ballot faithfully represents her choices. For the purposes of this discussion, we will assume that the electronic ballot is accompanied by a paper trail and the voter is given a receipt that she may take out of the polling site. We will also assume that privacy is guaranteed inside the voting booth; even with the cooperation of the voter, no one else may observe the voter's actions inside the voting booth.
+\item \emph{The tallying phase}. In the tallying phase, the election officials tally the set of encrypted ballots to produce an election result. We require that they do so without compromising the privacy of any individual voter; otherwise, a corrupt election official can act as a coercer. We also require that the election officials provide a proof that the announced election outcome is honest.
 \end{enumerate}
 
 In this section, we examine designs that are used to ensure each of these conditions of an end-to-end verifiable voting system is met.
@@ -24,15 +24,15 @@ The secure bulletin board also contains a proof of the election outcome, thereby
 
 \subsection{Cast-as-Intended Behavior} \label{evote:design:castasintended}
 
-To ensure cast-as-intended behavior, we use the \emph{``cast or challenge''} protocol as described in \cite{neff04, benaloh06}. After a voter has made her selections, the system encrypts them using some randomness and prints a receipt containing a cryptographic hash of the ciphertext. The system may additionally print a paper copy of the ballot containing more information which the voter must deposit into the ballot box before leaving.
+To ensure cast-as-intended behavior, we use the \emph{``cast or challenge''} protocol as described in \cite{neff04, benaloh06}. After a voter has made her selections, the system encrypts them using some randomness and prints a receipt containing a commitment to the ciphertext (e.g. a cryptographic hash of the ciphertext). The system may additionally print a paper copy of the ballot containing more information which the voter must deposit into the ballot box before leaving.
 
 The voter then has the option to either \emph{cast} the ballot or \emph{challenge} the system.
 \begin{itemize}
 \item The voter chooses to cast her ballot. She deposits the printout into the ballot box.
-\item The voter chooses to challenge the system. In this case, the system reveals the ciphertext and the randomization values used to produce it. The voter can verify that encryption of her vote with the given randomization produces the desired ciphertext and that the commitment to the ciphertext on the printout is correct. Should the voter choose this option, the ballot is spoiled. She must ask the system for a new randomized encryption of her selection, with which she has the option to cast or challenge again.
+\item The voter chooses to challenge the system. In this case, the system reveals the ciphertext and the randomization values used to produce it. The voter can verify that encryption of her vote with the given randomization produces the desired ciphertext and that the commitment to the ciphertext (e.g. hash value) on the printout is correct. Should the voter choose this option, the ballot is spoiled. She must ask the system for a new randomized encryption of her selection, with which she has the option to cast or challenge again.
 \end{itemize}
 
-In this scheme, the system must output a commitment to some ciphertext before it knows whether the voter will choose to cast or challenge. A skeptical voter may choose to challenge multiple times, thereby increasing the probability of catching a malicious system. Because of our privacy assumptions about the polling site, no one else may observe the voter while she issues a challenge to the system. However, a ballot that the voter challenges must be spoiled because the challenge process reveals how the ciphertext is constructed; a voter could use this information to prove how she voted after leaving the polling site if the encrypted votes are publicly posted.
+In this scheme, the system must output a commitment to some ciphertext before it knows whether the voter will choose to cast or challenge. A skeptical voter may increase the probability of catching a malicious system by challenging many times. Due to our privacy assumptions about the polling site, no one else may observe the voter while she issues a challenge to the system. However, a ballot that the voter challenges must be spoiled because the challenge process reveals how the ciphertext is constructed; a voter could use this information to prove how she voted after leaving the polling site if the encrypted votes are publicly posted.
 
 \subsection{Recorded-as-Cast Behavior} \label{evote:design:recordedascast}
 
@@ -45,7 +45,7 @@ To ensure tallied-as-recorded behavior, the system provides a proof that the enc
 \subsection{Threshold Encryption} \label{evote:design:threshold}
 In general, it is advisable to also use \emph{threshold encryption}, in which a minimum threshold $k$ out of a possible $n$ trustees must agree before decryption can occur. This mitigates the risk that some subset of election officials is corrupt and prevents them from decrypting individual votes.
 
-One way to share some secret value (such as the secret key) among many parties is to use the method developed by Shamir in \cite{shamir79}. To share a secret among $n$ parties with a minimum threshold $k$, we use a polynomial $P$ of degree $k-1$ over a finite field. The secret value is set as $P(0)$; each trustee is given a point $(x, y)$ for $x \neq 0$. Because $k$ points are required to reconstruct a polynomial of degree $k-1$, any $k$ trustees will be able to recover the secret key, but fewer trustees will not be able to.
+One way to share some secret value (such as a secret key) among many parties is to use the method developed by Shamir \cite{shamir79}. To share a secret among $n$ trustees with a minimum threshold $k$, we use a polynomial $P$ of degree $k-1$ over a finite field. The secret value is set as $P(0)$; each trustee is given a point $(x, y)$ for $x \neq 0$. Because $k$ points are required to reconstruct a polynomial of degree $k-1$, any $k$ trustees will be able to recover the secret key, but fewer trustees will not be able to.
 
 With some encryption schemes, threshold encryption may be enabled even with the use of Shamir secret sharing; for example, \cite{pedersen91, gennaro} provides a way to do this with the El Gamal public-key encryption scheme.
 
@@ -65,7 +65,7 @@ The exponential El Gamal public-key encryption \cite{elgamal} is one example of 
 \begin{align*}
 \log_g\left((c_1^k)^{-1} c_2\right) = \log_g\left((g^{kr})^{-1} g^m g^{kr}\right) = m
 \end{align*}
-\item \textbf{Homomorphic Addition of Ciphertexts.} Given two ciphertexts $C_1 = (g^{r_1}, m_1 \cdot y^{r_1})$ and $C_2 = (g^{r_2}, m_2 \cdot y^{r_2})$, componentwise multiplication yields an encryption of the sum of their underlying plaintexts with randomness $r_1 + r_2$.
+\item \textbf{Homomorphic Addition of Ciphertexts.} Given two ciphertexts $C_1 = (g^{r_1}, g^{m_1} y^{r_1})$ and $C_2 = (g^{r_2}, g^{m_2} y^{r_2})$, componentwise multiplication yields an encryption of the sum of their underlying plaintexts with randomness $r_1 + r_2$.
 \begin{align*}
 C_1 \times C_2 &= (g^{r_1}, g^{m_1} y^{r_1}) \times (g^{r_2}, g^{m_2} y^{r_2}) \\
 &= (g^{r_1 + r_2}, g^{m_1 + m_2} y^{r_1 + r_2})
@@ -77,7 +77,7 @@ C_1 \times C_2 &= (g^{r_1}, g^{m_1} y^{r_1}) \times (g^{r_2}, g^{m_2} y^{r_2}) \
 
 After the votes have been tallied via homomorphic addition, the resulting ciphertext is decrypted to yield the sum of all the votes. This decrypted sum is then posted to the secure bulletin board and should be consistent with the declared election outcome. Finally, the system needs to prove that the posted decryption is a proper decryption of the ciphertext without revealing the secret key; otherwise, a voter could use the revealed secret key to prove to a coercer how she voted.
 
-In exponential El Gamal, given public parameter $g$ and public key $y$, we want to show that plaintext $m$ is the proper decryption of ciphertext $(c_1, c_2)$. Recall that a proper encryption of the plaintext $m$ results in ciphertext $(g^r, g^m y^r)$. We divide the second component of the ciphertext by $g^m$ and then construct a proof showing that the result is of the form $(g^r, y^r) = (g^r, (g^x)^r)$. A proof of equality for two discrete logarithms, such as those described in \cite{chaum-pedersen} can then be used.
+In exponential El Gamal, given public parameter $g$ and public key $y$, we want to show that the revealed plaintext $m$ is the proper decryption of the ciphertext $(c_1, c_2)$. Recall that a proper encryption of the plaintext $m$ results in ciphertext $(g^r, g^m y^r)$. After dividing the second component of the ciphertext by $g^m$, a proof of correct decryption is equivalent to proving that $\log_{g}(c_1) = \log_{y}(c_2/g^m)$, which can be done using the scheme described by Chaum and Pedersen \cite{chaum-pedersen}.
 
 \subsection{Existing Systems Using Homomorphic Encryption} \label{evote:homomorphic:existing}
 
@@ -85,7 +85,7 @@ Many existing end-to-end verifiable voting systems use homomorphic encryption be
 
 \section{Mixnets} \label{evote:mixnets}
 
-Another way of verifying that the election result accurately reflects the set of encrypted votes is to use a \emph{mixnet}. First described by Chaum in \cite{chaum81} as a method to ensure anonymous communication, mixnets secretly permute the list of inputs so that they cannot be associated with the list of outputs. A mixnet may involve many \emph{mixservers} that are each a part of the overall chain; each mixserver secretly permutes the output of the previous mixserver, and sends its output to the next mixserver to be permuted.
+Another way of verifying that the election result accurately reflects the set of encrypted votes is to use a \emph{mixnet}. First described by Chaum \cite{chaum81} as a method to ensure anonymous communication, mixnets secretly permute the list of inputs so that they cannot be associated with the list of outputs. A mixnet may involve many \emph{mixservers} that are each a part of the overall chain; each mixserver secretly permutes the output of the previous mixserver, and sends its output to the next mixserver to be permuted.
 
 In the context of elections, the input to the mixnet is the list of encrypted votes, and the output is a list of the same votes, encrypted differently and in some different order. We can decrypt the ciphertexts that are output from the mixnet and post the resulting plaintexts to the secure bulletin board along with proofs of correct decryption. This allows anyone to check that the plaintexts produce the election outcome while making it impossible to associate each any plaintext vote with a voter.
 
@@ -95,7 +95,7 @@ The encryption of the votes must change between the input and output; we cannot 
 
 There are two general types of mixnets which accomplish our goals: \emph{decryption mixnets} and \emph{reencryption mixnets}.
 \begin{itemize}
-\item In a \emph{decryption mixnet}, a message is encrypted with the public key of each mixserver in the reverse order of traversal. In a system with $n$ mixservers, the input to the mixnet for message $m$ is $E_{K_n}(E_{K_{n-1}}( \dots (E_{K_1}(m))))$, where $E_{K_i}$ denotes encryption using the public key of the $i$th mixserver. At each mixserver, one layer of encryption is removed and the list of messages is shuffled before being sent to the next mixserver. The mixnet outputs a list of decrypted messages whose ordering cannot be traced back to the input ordering. Decryption mixnets are commonly used to anonymize routing in designs known as ``onion routing'', where each message is encrypted repeatedly like the layers of an onion, and each mixserver ``peels off'' a layer until the plaintext message is reached.
+\item In a \emph{decryption mixnet}, a message is encrypted with the public key of each mixserver in the reverse order of traversal. In a system with $n$ mixservers, the input to the mixnet for message $m$ is $\afunc{Enc}_{K_n}(\afunc{Enc}_{K_{n-1}}( \dots (\afunc{Enc}_{K_1}(m))))$, where $\afunc{Enc}_{K_i}$ denotes encryption using the public key of the $i$th mixserver. At each mixserver, one layer of encryption is removed and the list of messages is shuffled before being sent to the next mixserver. The mixnet outputs a list of decrypted messages whose ordering cannot be traced back to the input ordering. Decryption mixnets are commonly used to anonymize routing in designs known as ``onion routing'', where each message is encrypted repeatedly like the layers of an onion, and each mixserver ``peels off'' a layer until the plaintext message is reached.
 \item In a \emph{reencryption mixnet}, a message is encrypted once and input into the mixnet. At each mixserver, messages are reencrypted using a public-key encryption scheme that supports reencryption and then shuffled. Exponential El Gamal, as discussed in Section \ref{evote:homomorphic:elgamal}, supports reencryption by homomorphically combining the message to be reencrypted with an encryption of the ``zero message''. This similarly achieves our goals: the underlying plaintexts do not change through the mixnet, but their ciphertext representations and ordering are changed in a way that makes the outputs untraceable to the inputs.
 \end{itemize}
 
@@ -103,29 +103,29 @@ There are two general types of mixnets which accomplish our goals: \emph{decrypt
 
 A malicious mixserver might ignore the inputs given to it and send whatever list of encrypted votes it desires to the next mixserver in the chain. If the malicious mixserver were the last mixserver in the chain, it could ignore all of the ballots, decide the election outcome, and construct an output list that matches that outcome.
 
-Thus, in addition to anonymity, we require that our mixnets are \emph{verifiable}. In the early mixnets, individuals who sent messages through the mixnet could verify that their messages were correctly reproduced at the output end, but an outside observer could not verify the correct operation of the mixnet. Later, the concept of \emph{universal verifiability} was created, leading to the requirement that mixnets provide proofs of their correct operation that any observer can verify. In this section, we present a brief survey of mixnet designs that lead to the mixnet used in the design of the split-value voting system; a more thorough analysis of mixnet designs can be found in the work by Adida in \cite{adida-phd}.
+Thus, in addition to anonymity, we require that our mixnets are \emph{verifiable}. In the early mixnets, individuals who sent messages through the mixnet could verify that their messages were correctly reproduced at the output end, but an outside observer could not verify the correct operation of the mixnet. Later, the concept of \emph{universal verifiability} was created, leading to the requirement that mixnets provide proofs of correct operation that any observer can verify. In this section, we present a brief survey of mixnet designs that lead to the mixnet used in the split-value voting system. This survey is influenced by the work done by Adida \cite{adida-phd}, which contains a more thorough analysis.
 
 \subsection{Early Mixnets: Individual Verifiability}
 
-The first mixnet proposed by Chaum in \cite{chaum81} was a decryption mixnet: the sender prepares an input by encrypting her message with the public keys of each mixserver in reverse order of traversal, padding each ciphertext with some randomness before encrypting with the next public key. Each mixserver decrypts one layer of the input, reorders the messages, and passes the messages onto the next mixserver. The sender, knowing the randomness values that were used, can verify that her message was output correctly.
+The first mixnet proposed by Chaum \cite{chaum81} was a decryption mixnet. The sender prepares an input by encrypting her message with the public keys of each mixserver in reverse order of traversal, padding each ciphertext with some randomness before encrypting with the next public key. Each mixserver decrypts one layer of the input, reorders the messages, and passes the messages onto the next mixserver. The sender, knowing the randomness values that were used, can verify that her message was output correctly.
 
-One drawback to Chaum's design was that the input size was proportional to the number of mixservers, since each layer of encryption requires padding with randomness. The mixnet proposed by Park et al. in \cite{park94} improved upon this by using partial decryption and reencryption using El Gamal. Denoting the secret key of mixserver $i$ to be $x_i$ and the corresponding public key $y_i = g^{x_i}$, the input to the mixnet is the message encrypted using the product of the public keys of each mixserver.
+One drawback to Chaum's design is that the input size is proportional to the number of mixservers, since each layer of encryption requires padding with randomness. The mixnet proposed by Park et al. \cite{park94} improves upon this by using partial decryption and reencryption using El Gamal. Denoting the secret key of mixserver $i$ to be $k_i$ and the corresponding public key $y_i = g^{k_i}$, the input to the mixnet is the message encrypted using the product of the public keys of each mixserver.
 $$
-y = \prod_{i}{y_i} = g^{\sum_{i}{x_i}}
+y = \prod_{i}{y_i} = g^{\sum_{i}{k_i}}
 $$
 
 At mixserver $m_i$, given ciphertext $c = (c_1, c_2) = (g^r, m \cdot y^r)$, the message is \emph{partially decrypted} by removing the contribution of that mixserver's public key from the joint public key.
 $$
-\afunc{PartialDec}_{i}(c) = (c_1, c_2 \cdot c_{1}^{-x_i})
+\afunc{PartialDec}_{i}(c_1, c_2) = (c_1, c_2 \cdot c_{1}^{-k_i})
 $$
 The resulting ciphertext is then reencrypted using standard El Gamal reencryption.
 
-Vulnerabilities were discovered in both early mixnet designs; Pfitzmann showed in \cite{pfitzmann90, pfitzmann95} that related inputs produced related outputs in the mixnet; by choosing a malicious input that is related to another non-malicious input, an attacker could trace both inputs through the mixnet and discover the identity of the sender of the non-malicious message.
+Vulnerabilities were discovered in both early mixnet designs; Pfitzmann \cite{pfitzmann90, pfitzmann95} showed that related inputs produced related outputs in the mixnet; by choosing a malicious input that is related to another non-malicious input, an attacker could trace both inputs through the mixnet and discover the identity of the sender of the non-malicious message.
 
 \subsection{Sako and Kilian: Universal Verifiability}
 
 \begin{definition}
-A \emph{universally verifiable} mixnet is one that provides a proof of correct operation that any observer, including party that did not provide an input to the mixnet, may verify.
+A \emph{universally verifiable} mixnet is one that provides a proof of correct operation that any observer, including one that did not provide an input to the mixnet, may verify.
 \end{definition}
 
 Using a universally verifiable mixnet in an electronic voting system enables any member of the public to verify that the encrypted votes posted on the secure bulletin board were honestly mixed prior to tallying, an important component of an end-to-end verifiable voting system.
@@ -134,17 +134,19 @@ The first universally verifiable mixnet was proposed by Sako and Kilian in \cite
 
 \subsubsection{Proof of correct partial decryption}
 
-We prove that the partial decryption was done correctly by constructing a proof of equality of discrete logarithms. Given $c = (c_1, c_2)$ and $\afunc{PartialDec}(c) = (c_1', c_2')$, we compute $c_2 / c_2'$ and construct a proof that
-$$\log_{g}(y) = \log_{c_1}(c_2 / c_2')$$
+We prove that partial decryption was done correctly at each mixserver by constructing a proof of equality of discrete logarithms. Given mixserver $m_i$ with public key $y_i = g^{k_i}$, ciphertext $c = (c_1, c_2)$ and $\afunc{PartialDec}(c_1, c_2) = (c_1', c_2')$, we compute $c_2 / c_2'$ and construct a proof that
+$$\log_{g}(y_i) = \log_{c_1}(c_2 / c_2')$$
 using a scheme such as that described in \cite{chaum-pedersen}.
 
 \subsubsection{Proof of correct reencryption and shuffling}
 
-To prove that it shuffled and reencrypted messages correctly, each mixserver constructs a second shuffle and reencryption. With $50\%$ probability, the verifier asks the mixserver to prove that the second shuffle and reencryption was done correctly by revealing the permutation and randomization values used. The other half of the time, the verifier asks the mixserver to provide the differences in the permutation and randomization values and checks that one set of values may be obtained from the other. Thus, a dishonest mixserver will be caught with $50\%$ probability. This process may be made non-interactive via the method given by the Fiat-Shamir heuristic as given in \cite{fiat-shamir}.
+To prove that it shuffled and reencrypted messages correctly, each mixserver constructs a second shuffle and reencryption. With $50\%$ probability, the verifier asks the mixserver to prove that the second shuffle and reencryption was done correctly by revealing the permutation and randomization values used. The other half of the time, the verifier asks the mixserver to provide the differences in the permutation and randomization values and checks that one set of values may be obtained from the other. Thus, a dishonest mixserver will be caught with $50\%$ probability. This process may be made non-interactive via the Fiat-Shamir heuristic \cite{fiat-shamir}.
 
 \subsection{Jakobsson, Juels, and Rivest: Randomized Partial Checking}
 
-In the randomized partial checking design proposed by Jakobsson, Juels, and Rivest in \cite{jjr02}, each mixserver publishes a commitment to the permutation and randomization values used (i.e. by using a hash function). Then, the verifier constructs a challenge by choosing half of the inputs, for which the mixserver must reveal the permutation and randomization values. The verifier checks that the mixing was done according to the mixserver's response and that the values are consistent with the published commitments. Because each input to a mixserver has probability $1/2$ of being chosen, the probability that a single mixserver can act dishonestly about $n$ votes diminishes as $2^{-n}$.
+In the randomized partial checking (RPC) design proposed by Jakobsson, Juels, and Rivest in \cite{jjr02}, each mixserver publishes a commitment to the permutation and randomization values used (e.g. by using a hash function). Then, the verifier constructs a challenge by choosing half of the inputs, for which the mixserver must reveal the permutation and randomization values. The verifier checks that the output of the mixserver is consistent with the mixserver's response to the challenge and that the permutation and randomization values are consistent with the published commitments. Because each input to a mixserver has probability $1/2$ of being chosen, the probability that a single mixserver can act dishonestly about $n$ votes diminishes as $2^{-n}$.
+
+Recent work by Khazaei and Wikstr\"{o}m \cite{khazaei13} demonstrated practical attacks against decryption and homomorphic mixnets with RPC that break privacy and correctness. These attacks have been found (and later fixed) in systems such as Scantegrity \cite{scantegrity}. Khazaei and Wikstr\"{o}m recommend that RPC is not used with homomorphic mixnets and used with decryption mixnets only after more rigorous proofs of security are developed.
 
 \section{Conclusion} \label{evote:conclusion}
 

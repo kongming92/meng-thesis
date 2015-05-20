@@ -48,7 +48,7 @@ When the voter's vote $w$ is cast on her device (e.g. a tablet), it is broken in
 A triplet $S' = (x', y', z')$ is an \emph{obfuscation} of $S = (x, y, z)$ if $x'+y'+z' = x+y+z \bmod M$.
 \end{definition}
 
-The first column of servers agree upon a triplet of values $(p, q, r)$ such that $p + q + r = 0 \bmod M$ for each vote. The first row then computes $x' = x+p \bmod M$, the second row computes $y' = y+q \bmod M$, and so on. The column of servers then agree upon a random permutation $\pi : \{1, \dotsc, n\} \to \{1, \dotsc, n\}$. Each server transmits the permuted obfuscated values to the next column in the same row: $P_{1,1}$ transmits $x'_{\pi(1)}, \dotsc, x'_{\pi(n)}$ to $P_{1,2}$, $P_{2,1}$ transmits the permuted $y'$ values to $P_{2,2}$, and so on.
+The first column of servers agree upon a triplet of values $(p, q, r)$ such that $p + q + r = 0 \bmod M$ for each vote. The first row then computes $x' = x+p \bmod M$, the second row computes $y' = y+q \bmod M$, and so on. The triple $(x', y', z')$ is then an obfuscation of $(x, y, z)$. The column of servers then agree upon a random permutation $\pi : \{1, \dotsc, n\} \to \{1, \dotsc, n\}$. Each server transmits the permuted obfuscated values to the next column in the same row: $P_{1,1}$ transmits $x'_{\pi(1)}, \dotsc, x'_{\pi(n)}$ to $P_{1,2}$, $P_{2,1}$ transmits the permuted $y'$ values to $P_{2,2}$, and so on.
 
 The second and third columns of mixservers repeat this process, and the results of the final obfuscation and permutation are posted to the secure bulletin board. Given a security parameter $m$, this process of obfuscation and permutation across each column of the mixnet is performed $2m$ times. In our current implementation, $2m = 24$.
 
@@ -58,15 +58,15 @@ The other $m$ repetitions are used to prove that the election outcome is correct
 
 \section{Implementation Details} \label{sv:implementation}
 
-The original design of the system included a functioning preliminary prototype written using Python 3.4. In this prototype, mixservers were simulated using Python objects. A simulation of a complete election, including vote generation, mixing, proof construction, and verification, was contained within a single Python process. Python was chosen for its ease of programming, debugging, profiling, and installation. Care was taken to ensure that included libraries was kept to a minimum, so that the code was easy to run and results easily replicated.
+The original design of the system included a functioning preliminary prototype written using Python 3.4. In this prototype, mixservers were simulated using Python objects. A simulation of a complete election, including vote generation, mixing, proof construction, and verification, was contained within a single Python process. Python was chosen for its ease of programming, debugging, profiling, and installation. Care was taken to ensure that the number of included libraries was kept to a minimum, so that the code is easy to run and the results are easily replicated.
 
 \subsection{Server Processes and Communication} \label{sv:implementation:comm}
 
-Subsequent work \cite{marco} significantly decoupled the system. The mixservers, secure bulletin board, and vote generation each became its own process. An interface was built on top of Python TCP socket servers to facilitate communication, and Python socket handlers were used to handle incoming requests. All data was serialized with standard JSON libraries. The implementation also introduced the notion of a \emph{controller server}, whose responsibilities include the following.
+Subsequent work \cite{marco} significantly decoupled the system. Each of the mixservers, secure bulletin board, and vote generation simulator each operates within its own process. An interface was built on top of Python TCP socket servers to facilitate communication, and Python socket handlers were used to handle incoming requests. All data was serialized with standard JSON libraries. The implementation also introduced  a \emph{controller server}, whose responsibilities include the following.
 \begin{itemize}
 \item Serve as the first point of contact for all other servers. All other servers start knowing the IP address and port of the controller.
 \item Keep track of and broadcast network information, including all other servers, their addresses, and roles, to the network.
-\item Assign roles to each other server, and assign their positions in the mixnet.
+\item Assign roles to each server, and assign their positions in the mixnet.
 \item Synchronize the various phases of the election simulation, including vote production, mixing, proof construction, tallying, and verification.
 \end{itemize}
 
@@ -76,11 +76,11 @@ Because all communication occurs via standard TCP sockets, the implementation ma
 
 One particular detail that deserves special attention is the implementation of randomness. Randomness is used throughout the system: in constructing split-value representations, in constructing commitments, in choosing which component of a split-value representation to reveal during a verification, and so on. Fast, cryptographically secure randomness is essential to the correct functioning of the system.
 
-The utility function library written for this implementation includes a function that generates pseudorandom bytes. Each server maintains a list of randomness sources. When a randomness source is created, its name is used as the initial seed. When a sequence of pseudorandom bytes is desired, the seed is hashed twice using the SHA-256 hash function. The first hash determines the updated seed, which is stored in the place of the original seed. The second hash is of the original seed with a ``tweak'' string appended. With a good hash function, these two hashes will not appear to have originated from the same seed.
+The utility library written for this implementation includes a function that generates pseudorandom bytes. Each server maintains a list of randomness sources. When a randomness source is created, its name is used as the initial seed. When a sequence of pseudorandom bytes is desired, the seed is hashed twice using the SHA-256 hash function. The first hash determines the updated seed, which is stored in the place of the original seed. The second hash is of the original seed with a ``tweak'' string appended. With a good hash function, these two hashes will not appear to have originated from the same seed.
 
-During the production of the proofs, we require a good source of randomness to choose the $m$ repetitions that will be used to verify the mixnet and the other $m$ repetitions that will be used to verify the election result. There are two options for this.
+During the proof construction phase, we require a good source of randomness to choose the $m$ repetitions that will be used to verify the mixnet and the other $m$ repetitions that will be used to verify the election result. There are two options for this.
 \begin{itemize}
-\item An \emph{external source of randomness}, such as a dice-roll which occurs at a public ceremony after voting has ended. The benefit to this method is that we obtain ``true'' randomness that no adversary can predict beforehand. However, it is possible that election officials and the public are uncomfortable with introducing what appears to be games of chance into the election process.
+\item An \emph{external source of randomness}, such as dice rolling at a public ceremony after voting has ended. The benefit to this method is that we obtain ``true'' randomness that no adversary can predict beforehand. However, it is possible that election officials and the public are uncomfortable with introducing what appears to be games of chance into the election process.
 \item A \emph{Fiat-Shamir style hash} of the secure bulletin board. With overwhelming probability, a Fiat-Shamir style hash of the secure bulletin board will provide randomness that is good enough to overcome an adversary. There is the small but nonzero chance that an adversary could manipulate the election result by providing both a faulty proof that supports the manipulated outcome and an alternate version of the secure bulletin board that, when hashed, produces randomness that verifies her faulty proof. To compensate for this, we set the number of repetitions ($m$) to be higher so that the chance of producing an alternate secure bulletin board that passes all of the verifications decreases exponentially.
 \end{itemize}
 
@@ -88,5 +88,5 @@ In the current implementation, we use the Fiat-Shamir method. However, this choi
 
 \section{Conclusion} \label{sv:conclusion}
 
-In this section, we introduced the concepts and design behind the split-value verifiable voting system, including the idea of a split-value commitment. We discussed the ways that votes are obfuscated and permuted through the mixnet. Proofs are constructed to verify both the mixnet and the election outcome without revealing associating voters with their votes. Finally, we examined details of the prototype implementation, including the communication interface between servers and the implementation of randomness used in our simulations.
+In this section, we introduced the concepts and design behind the split-value verifiable voting system, including the idea of a split-value commitment. We discussed the ways that votes are obfuscated and permuted through the mixnet. Proofs are constructed to verify both the mixnet and the election outcome without associating voters with their votes. Finally, we examined details of the prototype implementation, including the communication interface between servers and the implementation of randomness used in our simulations.
 

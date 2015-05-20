@@ -1,10 +1,10 @@
 \chapter{Performance Optimization of the Split-Value System} \label{perf}
 
-After verifying the correctness of the implementation, we turn to performance. The performance of an electronic voting system is an important consideration when selecting among various options. The system must scale to be able to handle hundreds of thousands or even millions of voters per district and perhaps multiple simultaneous races. Furthermore, the media and the public demand fast, accurate reporting of election results. We would like to be able to provide the election results along with a verified proof within hours of the closing of polling sites.
+After verifying the correctness of the implementation, we turn to performance. The performance of an electronic voting system is an important consideration when selecting among various options. The system must scale to handle hundreds of thousands or even millions of voters per district and perhaps multiple simultaneous races. Furthermore, the media and the public demand fast, accurate reporting of election results. We would like to be able to provide the election results along with a verified proof within hours of the closing of polling sites.
 
-One proposed advantage of the split-value system is its efficiency. Existing comparable systems such as \cite{starvote} use relatively time-consuming public key encryption operations such as modular exponentiation, while the split-value system uses much simpler and faster modular addition operations. Compared to other systems, the split-value system pays a higher cost due to the need for $2m$ repetitions. Furthermore, the cost of inter-process and inter-machine communication and data serialization become non-negligible.
+One proposed advantage of the split-value system is its efficiency. Existing comparable systems such as STAR-Vote \cite{starvote} use relatively time-consuming public key encryption operations such as modular exponentiation, while the split-value system uses much simpler and faster modular addition operations. Compared to other systems, the split-value system pays a higher cost due to the need for $2m$ repetitions. Furthermore, the cost of inter-process and inter-machine communication and data serialization become non-negligible.
 
-The implementation presented in \cite{marco}, referred to as the \emph{reference implementation} here, contained numerous opportunities for optimization. In this section, we begin with a survey of the performance of cryptographic primitives and data serializers used heavily in the implementation. Then we present the main optimizations that were successfully applied to the reference implementation and their impact and conclude with an analysis of the scalability of the system.
+The implementation presented in \cite{marco}, referred to as the \emph{reference implementation} here, contained numerous opportunities for optimization. In this section, we begin with a survey of the performance of cryptographic primitives and data serializers used heavily in the implementation. Then we present the main optimizations that were successfully applied to the reference implementation and conclude with an analysis of the scalability of the system.
 
 All timings reported in this section, unless otherwise noted, are performed on a 16 core Amazon Web Services (AWS) machine using two Intel E5-2666 v3 processors operating at 2.9 GHz and 32 GB RAM. The default settings for simulating an election consist of a single race with two candidates and a third write-in candidate up to sixteen characters, 1000 voters, and $2m = 24$.
 
@@ -22,17 +22,17 @@ All timings reported in this section, unless otherwise noted, are performed on a
   Python \texttt{hashlib.sha256} & 7.64 \\
   NaCl SHA-256 & 33.47 \\
   Cryptography SHA-256 & 150.27 \\
-  Python HMAC & 51.33 \\
+  Python HMAC with \texttt{hashlib.sha256} & 51.33 \\
   Cryptography AES/CBC & 377.80 \\
   XSalsa20 & 33.94
 \end{tabular}
-\caption[Performance measurements of cryptographic primitives]{Runtime of ten million calls to various cryptographic functions in Python built-in and third-party libraries.}
+\caption[Performance measurements of cryptographic primitives]{Runtimes, in seconds, of ten million calls to various cryptographic functions in Python built-in and third-party libraries.}
 \label{table:perf:crypto}
 \end{table}
 
 Table \ref{table:perf:crypto} shows the performance of various cryptographic primitives, including hash functions (MD5, SHA-256), a block cipher (AES in CBC mode), and a stream cipher (XSalsa20), by running each function ten million times. The built-in Python hash functions and XSalsa20 perform efficiently as expected, and we choose SHA-256 as the hash function used in the implementation as it is both fast and secure.
 
-It is surprising that the Python NaCl and Cryptography third-party libraries, both of which are very popular, significantly underperform compared to the built-in functions. The inefficiency of AES is particularly surprising given the 2010 release of the Intel AES New Instructions Set, which gives hardware support to all standard modes of operation and key lengths. The expanded instruction set gives very good performance; encryption with 256-bit AES-CBC takes 5.65 CPU cycles per byte (256-bit AES-CBC is the most expensive operation) \cite{intel}. The CPUs used in this benchmark did indeed support the expanded instruction set, but it is likely that the third-party libraries did not use them.
+It is surprising that the Python NaCl and Cryptography third-party libraries, both of which are very popular, significantly underperform compared to the built-in functions. The inefficiency of AES is particularly surprising given the Intel AES New Instructions Set, which gives hardware support to all standard modes of operation and key lengths. The expanded instruction set gives very good performance; encryption with 256-bit AES-CBC takes 5.65 CPU cycles per byte (256-bit AES-CBC is the most expensive operation) \cite{intel}. The CPUs used in this benchmark did indeed support the expanded instruction set, but it is likely that the third-party libraries did not use them.
 
 Unfortunately, the original design estimated the performance of AES to be more than two magnitudes faster than its Python implementation \cite{rrv}. Even using the significantly faster HMAC with SHA-256, commitments are more than forty times slower than estimated. It is likely that C code written using the expanded hardware instructions will offer significant performance benefits. For our Python implementation, we use HMAC with SHA-256 as the commitment function.
 
@@ -46,17 +46,17 @@ Unfortunately, the original design estimated the performance of AES to be more t
   Python \texttt{os.urandom} & 36.95 \\
   \texttt{sv.get\_random\_from\_source} & 46.87
 \end{tabular}
-\caption[Performance measurements of pseudorandom number generators]{Runtime of ten million calls to \texttt{os.urandom} and the SHA-256-based pseudorandom number generator.}
+\caption[Performance measurements of pseudorandom number generators]{Runtimes, in seconds, of ten million calls to \texttt{os.urandom} and the SHA-256-based pseudorandom number generator.}
 \label{table:perf:rand}
 \end{table}
 
 As discussed in Section \ref{sv:implementation:random}, randomness is used throughout the system. The method used in the implementation gives a good pseudorandom generator with three calls to the SHA-256 hash function (once to generate the new seed, and twice to compute the tweaked hash which becomes the output). However, as seen in Table \ref{table:perf:rand}, there is a non-negligible overhead likely due to the repeated calls to the \texttt{digest} function and the byte-encoding functions used to incorporate the tweaking string.
 
-When benchmarking the two functions side by side, it appears that \texttt{os.urandom(n)}, which provides ``a string of \texttt{n} random bytes suitable for cryptographic use'' \cite{python-urandom} is a faster option. However, in the context of the overall system, the improvement is minimal. Furthermore, \texttt{os.urandom} relies on the operating system's implementation of the \texttt{/dev/urandom} entropy pool, which is not always guaranteed to have enough entropy to produce good randomness. For these reasons, we stick to the method of repeatedly hashing the seed string to generate randomness.
+When benchmarking the two functions side by side, it appears that \texttt{os.urandom}, which provides ``a string of \texttt{n} random bytes suitable for cryptographic use'' \cite{python-urandom} is a faster option. However, in the context of the overall system, the improvement is minimal. Furthermore, \texttt{os.urandom} relies on the operating system's implementation of the \texttt{/dev/urandom} entropy pool, which is not always guaranteed to have enough entropy to produce good randomness. For these reasons, we stick to the method of repeatedly hashing the seed string to generate pseudorandomness.
 
 \section{Performance of JSON Serializers} \label{perf:json}
 
-The JSON format is used to serialize all data sent over the wire and posted to the secure bulletin board; it was chosen because it is compact, very commonly used, and well-supported by all platforms. The library that is used has a signficant impact on the performance of the system.
+The JSON format is used to serialize all data sent over the wire and posted to the secure bulletin board; it was chosen because it is compact, very commonly used, and well-supported by all platforms.
 
 \begin{table}[htbp]
 \centering
@@ -71,13 +71,13 @@ The JSON format is used to serialize all data sent over the wire and posted to t
   \texttt{simplejson.dumps} & 38.91 \\
   \texttt{ujson.dumps} & 7.76
 \end{tabular}
-\caption[Performance measurements of JSON serializers]{Runtime of five calls to serializing (\texttt{dumps}) and deserializing (\texttt{loads}) functions of three different Python JSON libraries.}
+\caption[Performance measurements of JSON serializers]{Runtimes, in seconds, of five calls to serializing (\texttt{dumps}) and deserializing (\texttt{loads}) functions of three different Python JSON libraries on a 164.6 MB JSON file.}
 \label{table:perf:json}
 \end{table}
 
-Table \ref{table:perf:json} shows the performance of three common JSON serialization libraries for Python, tested on a moderately large (164.6 MB) JSON file. The \texttt{simplejson} and \texttt{ujson} libraries have C extensions that can be compiled for performance boosts; they were included in our tests. Our tests show that the \texttt{ujson} library significantly outperforms the other two libraries; the C extensions for \texttt{simplejson} do not provide any noticeable performance benefit.
+Table \ref{table:perf:json} shows the performance of three common JSON serialization libraries for Python, tested on a moderately large (164.6 MB) JSON file. The \texttt{simplejson} and \texttt{ujson} libraries have C extensions that can be compiled for performance boosts; the extensions were included in our tests.
 
-Unfortunately we could not use \texttt{ujson} because it does not support integers longer than 64 bits. We started our implementation with Python's built-in JSON serializer; however, we discovered that the structure of the data in our particular system heavily favored \texttt{simplejson}. This was not reflected in the data used in the benchmarks in \ref{table:perf:json}. Switching libraries produced significant speedups.
+Although the \texttt{ujson} library significantly outperforms the other two libraries, we could not use it because it does not support integers longer than 64 bits. We expected the other two libraries to produce similar runtimes given our benchmarks, but in practice \texttt{simplejson} yielded significant speedups, as detailed in section \ref{perf:optimizations:json}. This is likely due to differences in the structure of the data being serialized that are particular to this system; we did not investigate this issue in much greater detail.
 
 \section{Optimization of the Prototype} \label{perf:optimizations}
 
@@ -88,7 +88,7 @@ We focus on the timings of the mix, proof, and verification phases as they are t
 \begin{table}[htbp]
 \centering
 \begin{tabular}{l | r | r | r || r}
-  \textbf{Optimization} & \textbf{Mix} & \textbf{Proof} & \textbf{Verify} & \textbf{Total Time} \\
+  \textbf{Optimization} & \textbf{Mix (s)} & \textbf{Proof (s)} & \textbf{Verify (s)} & \textbf{Total (s)} \\
   \hline
   Reference implementation & 51.41 & 142.62 & 24.00 & 225.44 \\
   Socket operations & 30.47 & 99.10 & 22.02 & 154.99 \\
@@ -100,13 +100,13 @@ We focus on the timings of the mix, proof, and verification phases as they are t
   Precompute SBB hashes & 5.41 & 5.63 & 5.76 & 22.12 \\
   Chain SBB hashes & 5.36 & 4.96 & 5.84 & 21.47
 \end{tabular}
-\caption[Election runtime at each stage of optimization]{Runtimes of the major phases of a simulated election at each stage of the optimization process. All timings reflect the average of five simulations. The Total Time column includes the tallying time in addition to the runtime for the mix, proof, and verify phases, giving the system's total expected runtime after an election has closed. More comprehensive data can be found in Appendix A.}
+\caption[Election runtime at each stage of optimization]{Runtimes, in seconds, of the major phases of a simulated election at each stage of the optimization process. All timings reflect the average of five simulations of an election consisting of one race, two candiates plus one write-in, and 1000 voters. The Total Time column includes the tallying time in addition to the runtime for the mix, proof, and verify phases, giving the system's total expected runtime after an election has closed. More comprehensive data can be found in Appendix A.}
 \label{table:perf:optimizations}
 \end{table}
 
 Table \ref{table:perf:optimizations} shows the major optimizations that were performed on the reference implementations and the resulting runtimes. The performance gains for each optimization are reported relative to the row immediately preceding it in the table.
 
-In summary, the most effective optimizations involved leveraging the available parallelism in the multiple mixservers and ensuring that commonly used subroutines were as fast as possible by optimizing by hand, using a built-in Python function, or selecting a third-party library optimized for speed. Overall, we observe a tenfold speedup due to our optimizations detailed in this section.
+In summary, the most effective optimizations involved leveraging the available parallelism in the multiple mixservers and ensuring that commonly used subroutines were as fast as possible by optimizing by hand, using a built-in Python function, or selecting a third-party library optimized for speed. Overall, we observe a $90\%$ reduction in runtime due to our optimizations detailed in this section.
 
 In this section, we begin by introducing the Python profiler, CPython, and then describe each successful optimization applied and report its resulting speedup.
 
@@ -131,11 +131,11 @@ In this section, we begin by introducing the Python profiler, CPython, and then 
   336000   5.812   0.000  split-value-voting-dev/sv.py:47(secure_hash)
   144000   4.077   0.000  split-value-voting-dev/sv.py:86(bytes2hex)
 \end{lstlisting}
-\caption[CProfile output for a single call to a mixserver handler]{CProfile output for a single call to the mixserver handler for the first phase of the proof production phase. We note that JSON-related functions, \texttt{get\_random\_from\_source}, and \texttt{bytes2hex} are time-consuming function calls.}
+\caption[CProfile output for a single call to a mixserver handler]{CProfile output for a single call to the mixserver handler for the first phase of the proof production phase, sorted by the amount of time spent in each function. We note that JSON-related functions, \texttt{get\_random\_from\_source}, and \texttt{bytes2hex} are time-consuming function calls.}
 \label{figure:perf:optimizations:profiler}
 \end{figure}
 
-The Python profiler, CProfile, allows us to easily see the amount of time spent in each function. We sort the CProfile output by the cumulative time per call, which, for every function call, gives the amount of time spent in that function and all functions called from it.
+The Python profiler, CProfile, allows us to see the amount of time spent in each function. We sort the CProfile output by the cumulative time per call, which, for every function call, gives the amount of time spent in that function and all functions called from it.
 
 Figure \ref{figure:perf:optimizations:profiler} gives one example of a part of a CProfile output when the profiler was run on the mixserver handler for the first phase of proof generation. The functions \texttt{handle\_prove}, \texttt{compute\_output\_commitments}, \texttt{ask\_sbb\_to\_post}, and \texttt{json\_client} are all high-level wrapper functions that call many functions within them. We notice that most of the profiler output is dominated by JSON encoding (which is used when sending data to the secure bulletin board) and \texttt{get\_random\_from\_source}, which in turn calls \texttt{secure\_hash} and \texttt{bytes2hex}.
 
@@ -147,7 +147,7 @@ Note that the function calls to \texttt{dumps}, which handles the JSON encoding,
 As explained in the previous chapter, communication between machines happens via TCP servers communicating over Python's standard socket implementation, which provides an interface for sending and receiving data \cite{python-sockets}.
 \begin{itemize}
 \item \texttt{socket.recv(bufsize)}. Receive data from the socket up to \texttt{bufsize} bytes, and return the data received.
-\item \texttt{socket.send(string)}. Send data through the socket, and returns the number of bytes sent. \texttt{socket.send} does not guarantee that the all data is sent; the caller must check the return value and retry sending the remaining data if necessary.
+\item \texttt{socket.send(string)}. Send data through the socket, and return the number of bytes sent. \texttt{socket.send} does not guarantee that the all data is sent; the caller must check the return value and retry sending the remaining data if necessary.
 \item \texttt{socket.sendall(string)}. Send data through the socket, and return \texttt{None} on success. Unlike \texttt{socket.send}, \texttt{socket.sendall} guarantees that all data is sent if the function returns successfully.
 \end{itemize}
 
@@ -159,7 +159,7 @@ Because \texttt{socket.recv} blocks if the data is not ready yet (up to some tim
 \item \texttt{recv(socket)}. Receive and return all data from the socket by stripping out the length from the first chunk of the message and repeatedly calling \texttt{socket.recv} until the length is met or an error is encountered. We assume that the length of a message will never exceed the limit of a 32-bit signed integer.
 \end{itemize}
 
-This optimization yielded a speedup of 20.9 seconds ($68.7\%$) in the proof phase and 43.5 seconds ($43.9\%$) in the verify phase.
+This optimization yielded a speedup of 20.9 seconds ($40.7\%$ reduction in runtime) in the mix phase and 43.5 seconds ($30.5\%$ reduction in runtime) in the proof phase.
 
 \subsection{Byte/Integer Utility Functions} \label{perf:optimizations:byteint}
 
@@ -169,54 +169,54 @@ Specifically, for the \texttt{sv.bytes2hex} implementation, which returns the he
 
 For the \texttt{sv.int2bytes} function, which converts any integer into a bytearray representation, we use Python 3's new \texttt{bit\_length} attribute, which supports signed integers up to 64 bits long, along with a 64-bit mask and shift. This allows us to process the input eight bytes at a time instead of one, yielding a $1.5 \times$ speedup in the function's runtime compared to the reference implementation.
 
-Overall, these optimizations give a $6.1\%$ speedup, mostly in the proof and verify phases.
+Overall, these optimizations give a $5.75\%$ reduction in runtime, mostly in the proof and verify phases.
 
 \subsection{Introducing Parallelism} \label{perf:optimizations:parallel}
 
-No performance analysis is complete without an analysis of the potential for parallelism. Multicore CPUs are now the norm; even a typical laptop that we would expect an election official to own and use in running the system is likely to have at least two CPU cores. Furthermore, in our system, the computation required to mix the votes and construct a proof of the election outcome is distributed across the nine mixservers. We show here that significant parallelism can be leveraged in each of the mix, proof, and verification phases of the system.
+No performance analysis is complete without an analysis of the potential for parallelism. Multicore CPUs are now the norm; even a typical laptop that we would expect an election official to use is likely to have at least two CPU cores. Furthermore, in our system, the computation required to mix the votes and construct a proof of the election outcome is distributed across the nine mixservers. We show here that significant parallelism can be leveraged in each of the mix, proof, and verification phases of the system.
 
 \subsubsection{Parallelism in the Mix and Proof Phases}
 
 In the reference implementation of the mix and proof phases, the controller server issued remote procedure calls (RPCs) to each mixserver sequentially. Each RPC would block on the controller until the coresponding mixserver's RPC response arrived at the controller; only then would the next RPC be issued. Because the RPCs are independent within each part of the proof and verify phases, they may be issued asynchronously and in parallel.
 
-We use Python's implementation of processes in the \texttt{multiprocessing} library to accomplish this parallelization. One process is forked off the process running the controller server for each RPC. The process is responsible for issuing the RPC, waiting for the response, and returning to the parent process. Even with a single-core controller server, a process that is waiting for an RPC response may yield the CPU to allow another process to issue an RPC.
+We use Python's implementation of processes in the \texttt{multiprocessing} library to accomplish this parallelization. For each RPC, one process is forked from the pricess running the controller server. The forked processes are responsible for issuing the RPCs, waiting for responses, and returning to the parent process. Even with a single-core controller server, a process that is waiting for an RPC response may yield the CPU to allow another process to issue an RPC.
 
 Processes are used instead of threads because Python's Global Interpreter Lock limits parallelism between the various threads spawned from a single process. We confirmed that using Python threads instead of processes yielded no noticeable speedup. The built-in \texttt{multiprocessing} library does not support process pools as it does thread pools, so we must fork new processes for each RPC instead of relying on existing workers. However, forking a new process is a constant-time cost relative to scaling the number of voters and our tests show that it is negligible.
 
-Introducing parallelism produced a 12.1 second ($194.8\%$) speedup in the mix phase and 21.5 second ($36.2\%$) speedup in the proof phase.
+Introducing parallelism produced a 12.1 second speedup ($66.1\%$ reduction in runtime) in the mix phase and 21.5 second speedup ($26.6\%$ reduction in runtime) in the proof phase.
 
 \subsubsection{Parallelism in the Verification Phase}
 
-Unlike the mix and proof phases which involve many distinct machines, the verification phase occurs on a single machine. However, all parts of the verification process only depend on the contents of the secure bulletin board; after all, we expect that any member of the public may take the contents of the secure bulletin board and verify the election outcome herself. Although no part of the verification phase depends on any previous part because each part may independently read the secure bulletin board, in practice it is easier to let earlier phases populate a shared data structure for later phases to use. This prevents the need to deserialize the secure bulletin board, which may be a large file and thus a costly process, at the cost of some parallelism.
+Unlike the mix and proof phases which involve many distinct machines, the verification phase occurs on a single machine. However, all parts of the verification process depend only on the contents of the secure bulletin board; we expect that any member of the public may take the contents of the secure bulletin board and verify the election outcome herself. Although no part of the verification phase depends on any previous part because each part may independently read the secure bulletin board, in practice it is easier to let earlier phases populate a shared data structure for later phases to use. This prevents the need to deserialize the secure bulletin board, which may be a large file and thus a costly process, at the cost of some parallelism.
 
 In the reference implementation, later parts of the verification phase used data that earlier parts had already verified. This makes verification simpler because at no point does the verifier need to worry about inconsistent or unverified data propagating through it. However, this scheme resulted in a complex data dependency graph which made the verifier difficult to parallelize; a process running one part of the verification could be started only when all of its dependencies had completed.
 
-The requirement that data consumed in later parts must itself be verified is stricter than necessary. If any step of the verifier fails, we declare the election to be invalid, so even if bad data propagates through the verifier, at some point that data will itself be checked and an error produced. This check might not happen until after the bad data has been used in other parts of the verifier, but the problem will be caught nonetheless.
+The requirement that data consumed in later parts must itself be verified is stricter than necessary. If any step of the verifier fails, we declare the election to be invalid, so even if bad data propagates through the verifier, at some point that data will itself be checked and an error raised. This check might not happen until after the bad data has been used in other parts of the verifier, but the problem will be caught nonetheless.
 
-Relaxing our requirements on the verifier and introducing parallelism resulted in a 8 second ($8\%$) speedup in the verification phase.
+Relaxing our requirements on the verifier and introducing parallelism resulted in a 8 second speedup ($7.4\%$ reduction in runtime) in the verification phase.
 
 \subsection{JSON Serialization} \label{perf:optimizations:json}
 
-While the benchmarks in Section \ref{perf:json} showed no benefit in switching to the \texttt{simplejson} library, in our system the performance speedup was enormous. By simply switching the serializer library and eliminating indentation and formatting from JSON strings, a 41.5 second ($233\%$) speedup in the proof phase and 2.9 second ($40.5\%$). The overall runtime speedup for the simulation was 45 seconds ($126\%$).
+While the benchmarks in Section \ref{perf:json} showed no benefit in switching to the \texttt{simplejson} library, in our system the performance speedup was enormous. By simply switching the serializer library and eliminating indentation and formatting from JSON strings, a 41.5 second speedup ($70\%$ reduction in runtime) in the proof phase and 2.9 second speedup ($58.4\%$ reduction in runtime) in the verify phase were achieved. The overall runtime speedup for the simulation was 45 seconds ($55.8\%$ reduction in runtime).
 
 \subsection{Hashing the Secure Bulletin Board} \label{perf:optimizations:sbb}
 
-Hashes of the secure bulletin board are used in generating the cut-and-choose and left-right challenges during the construction of the proof. They are also used in the verification to ensure that the hash value used in the proof are actually proper hashes of the secure bulletin board.
+Hashes of the secure bulletin board are used in generating the cut-and-choose and left-right challenges during the construction of the proof. The hash values are recomputed in the verification phase to ensure that the values usedin the proof are actually correct hashes of the secure bulletin board.
 
-Because the verification process itself makes modifications to the secure bulletin board data structure, causing the hash values to differ, the reference implementation makes a deep copy of the data structure before proceeding with verification. By moving the hashing verification to be before the rest of the data structure is verified, a 1.3 second ($22\%$) speedup was obtained.
+Because the verification process itself makes modifications to the secure bulletin board data structure, causing the hash values to differ, the reference implementation makes a deep copy of the data structure before proceeding with verification. By moving the hashing verification to be before the rest of the data structure is verified, a 1.3 second speedup ($18.3\%$ reduction in runtime) was obtained in the verification.
 
-In the reference implementation, the mixservers ask the server storing the secure bulletin board for its hash value for the aforementioned reasons. Although the mixservers operate in parallel, the secure bulletin board runs on a single process and therefore serializes the requests for the hash value. Therefore, a mixserver that issues its request later must wait for the secure bulletin board to service all earlier requests, making no progress in the process. In our optimization, the controller server requests the hash value and sends it to each mixserver as part of the body of the relevant requests. Each mixserver then has all the information necessary to construct the entire proof section at the beginning of each phase and wastes no time waiting for the single-threaded secure bulletin board to service other requests. This optimization resulted in a 11.7 second ($208\%$) speedup.
+In the reference implementation, the mixservers ask the server storing the secure bulletin board for its hash value for the aforementioned reasons. Although the mixservers operate in parallel, the secure bulletin board runs on a single process and requests for the hash value are serialized. Therefore, a mixserver that issues its request later must wait for the secure bulletin board to service all earlier requests, making no progress in the process. In our optimization, the controller server requests the hash value and sends it to each mixserver as part of the body of the relevant requests. Each mixserver then has all the necessary information at the beginning of each phase and wastes no time waiting for the single-threaded secure bulletin board to service other requests. This optimization resulted in a 11.7 second speedup ($67.5\%$ reduction in runtime).
 
-Each request for the hash value of the secure bulletin board requires that the contents of the data structures held in memory be serialized before it can be hashed. As the secure bulletin board grows, this serialization becomes expensive. We can reduce this cost by computing the updated hash value every time anything is appended to the bulletin board. We calculate the new hash value by concatenating the data to be appended with the previous hash value. Because the previous hash value is always of fixed size, the cost to compute the hash value does not grow as the size of the data structures grows. While this results in a relatively small ($13.5\%$) performance gain in the proof phase, it prevents performance from diminishing as the size of the secure bulletin board increases.
+Each request for the hash value of the secure bulletin board requires that the contents of data structures held in memory be serialized before they can be hashed. As the secure bulletin board grows, this serialization becomes expensive. We can reduce this cost by computing the updated hash value every time anything is appended to the bulletin board. We calculate the new hash value by concatenating the data to be appended with the previous hash value. Because the previous hash value is fixed in size, the cost to compute the hash does not grow as the size of the secure bulletin board. While this results in a relatively small performance gain in the proof phase ($11.9\%$ reduction in runtime), it prevents performance from diminishing as the size of the secure bulletin board increases.
 
 \section{Performance Scalability} \label{perf:scale}
 
-In the previous section, we simulated elections with 1000 voters because it provided useful data for optimization without taking too long to run successive simulations. A real election, however, may have hundreds of thousands or even millions of voters. We are interested in how our system scales with the number of voters.
+In the previous section, we simulated elections with 1000 voters because it provided useful data for optimization without taking too long to run simulations. A real election, however, may have hundreds of thousands or even millions of voters. We are interested in how our system scales with the number of voters.
 
 \begin{table}[htbp]
 \centering
 \begin{tabular}{r | r | r}
-  \textbf{Number of Voters} & \textbf{Total Time} & \textbf{Time Per Voter} \\
+  \textbf{Number of Voters} & \textbf{Total Time (s)} & \textbf{Time Per Voter (s)} \\
   \hline
   100 & 2.48 & 0.0248 \\
   500 & 10.93 & 0.0219 \\
@@ -224,31 +224,31 @@ In the previous section, we simulated elections with 1000 voters because it prov
   5000 & 142.71 & 0.0285 \\
   10000 & 271.88 & 0.0212
 \end{tabular}
-\caption[Election runtime for varying numbers of voters]{Runtimes of the major phases of a simulated election (including mix, proof, tally, and verify) for varying numbers of voters. All timings reflect the average of five simulations. More comprehensive data can be found in Appendix A.}
+\caption[Election runtime for varying numbers of voters]{Runtimes, in seconds, of the major phases of a simulated election (including mix, proof, tally, and verify) for varying numbers of voters. All timings reflect the average of five simulations. We observe that the runtime scales linearly as the number of voters. More comprehensive data can be found in Appendix A.}
 \label{perf:nvoters}
 \end{table}
+
+Table \ref{perf:nvoters} shows the performance of the system with 100, 500, 1000, 5000, and 10,000 voters and the corresponding costs per voter. We see that the performance of the system scales roughly linearly as the number of voters, which bodes well for scaling the system to production. In the current prototype and the testing machine, connections begin to time out for 100,000 voters. This is likely an issue with the pool of TCP connections becoming saturated since the simulation is running on a single operating system. However, this remains to be tested rigorously.
 
 \begin{table}[htbp]
 \centering
 \begin{tabular}{r | r | r}
-  \textbf{Number of Repetitions ($2m$)} & \textbf{Total Time} & \textbf{Time Per Repetition} \\
+  \textbf{Number of Repetitions ($2m$)} & \textbf{Total Time (s)} & \textbf{Time Per Repetition (s)} \\
   \hline
   4 & 4.01 & 1.0029 \\
   8 & 7.84 & 0.9801 \\
   16 & 15.17 & 0.9478 \\
   24 & 21.47 & 0.8947
 \end{tabular}
-\caption[Election runtime for varying numbers of repetitions]{Runtimes of the major phases of a simulated election (including mix, proof, tally, and verify) for varying numbers of repetitions. All timings reflect the average of five simulations. More comprehensive data can be found in Appendix A.}
-\label{perf:nvoters}
+\caption[Election runtime for varying numbers of repetitions]{Runtimes, in seconds, of the major phases of a simulated election (including mix, proof, tally, and verify) for varying numbers of repetitions (value of $2m$). All timings reflect the average of five simulations. More comprehensive data can be found in Appendix A.}
+\label{perf:nreps}
 \end{table}
 
-Table \ref{perf:nvoters} shows the performance of the system with 100, 500, 1000, 5000, and 10,000 voters and the corresponding costs per voter. We see that the performance of the system scales roughly linearly as the number of voters, which bodes well for scaling the system to production. In the current prototype and the testing machine, connections begin to time out for 100,000 voters. This is likely an issue with the pool of TCP connections becoming saturated since the simulation is running on a single operating system. However, this remains to be tested rigorously.
-
-Table \ref{perf:nreps} shows the performance of the system with the number of repetitions ($2m$) set to 4, 8, 16, and 24. Although the runtime grows very slightly sublinearly as the number of repetitions, reducing the number of repetitions may reduce the runtime significantly.
+Table \ref{perf:nreps} shows the performance of the system with the number of repetitions ($2m$) set to 4, 8, 16, and 24. Although the runtime grows slightly sublinearly as the number of repetitions, reducing the number of repetitions is one way of significantly reducing the system's runtime.
 
 \section{Comparison with Other Systems} \label{perf:comparison}
 
-Unfortunately, there exists very little data concerning the performance of end-to-end verifiable electronic voting schemes in general and mixnets in particular. In the original design of the Helios system by Adida, proof generation and verification of a 500 voter election took many hours \cite{adida-helios}. However, Adida notes the potential for using parallelism to achieve speedups. Furthermore, we must keep in mind that computers have become much more powerful since the original design of Helios in 2008: as a rough metric, the cost per GFLOPS (one billion floating-point operations per second) has decreased more than $600 \times$ in the last seven years, while browser implementations of Javascript have continued to improve.
+Unfortunately, there exists very little data concerning the performance of end-to-end verifiable electronic voting schemes in general and mixnets in particular. In the original design of the Helios system by Adida, proof generation and verification of a 500 voter election took many hours \cite{adida-helios}. However, Adida notes the potential for using parallelism to achieve speedups. Furthermore, we must keep in mind that computers have become much more powerful since the original design of Helios in 2008: as a rough metric, the cost per GFLOPS (one billion floating-point operations per second) has decreased more than $600 \times$ in the last seven years \cite{wiki:flops}, while browser implementations of Javascript have continued to improve.
 
 The original design of Scantegrity \cite{scantegrity} claims that the ``necessary Switchboard audit data'' could be produced and verified in a matter of minutes for an election with 32 races and 200,000 ballots. However, it is unclear if this is simply a proof of an honest Switchboard in the election setup phase or if this time includes a proof and verification of the overall election's outcome.
 
@@ -256,12 +256,12 @@ Mixnet designs such as those proposed in \cite{chase13} achieve improvements in 
 
 \section{Conclusion} \label{perf:conclusion}
 
-In this section, we examined the performance of the split-value system implementation. Benchmarking functions available for cryptographic primitives led to the usage of the SHA-256 hash function and the HMAC commitment scheme in our implementation. We used the Python profiler to identify areas of the implementation that could yield large performance gains. By leveraging parallelism, reducing the wait time on sockets and requests to the secure bulletin board, and a more efficient JSON serializer, our optimized system runs in less than one-tenth the time of the reference implementation.
+In this section, we examined the performance of the split-value system implementation. Benchmarking functions available for cryptographic primitives led to the usage of the SHA-256 hash function and the HMAC commitment scheme in our implementation. We used the Python profiler to identify areas of the implementation that could yield large performance gains. By leveraging parallelism, reducing the wait time on sockets and requests to the secure bulletin board, and using a more efficient JSON serializer, our optimized system runs in less than one-tenth the time of the reference implementation.
 
 With the optimized implementation, an election of one million voters will take between seven and eight hours to mix, prove, tally, and verify. This is a bit more than twice as long as the time generally allotted between the closing of polling sites and the release of election results in the evening news. We hope that further optimization may yield this factor of two to three improvement in the runtime.
 
-Using properly hardware-optimized AES encryption as a commitment scheme has the potential to reduce runtime significantly; according to Intel's measurements, the estimate of 8 million commitments given in [CITE PAPER] per second can be achieved even with conservative estimates.
+Using properly hardware-optimized AES encryption as a commitment scheme has the potential to reduce runtime significantly; according to Intel's measurements, the estimate of 8 million commitments per second given in \cite{rrv} can be achieved even with conservative estimates.
 
-In the current implementation, considerable time is spent on repeating the mixing and proof construction for $2m = 24$ times. As mentioned in Section \ref{sv:implementation:random}, this repetition is necessary due to the reduced security in using a Fiat-Shamir hash of the secure bulletin board instead of true randomness. The process may be sped up at least twofold if election officials adopted a true source of randomness during the construction of the proof.
+In the current implementation, considerable time is spent on repeating the mixing and proof construction for $2m = 24$ repetitions. As mentioned in Section \ref{sv:implementation:random}, this repetition is necessary due to the reduced security in using a Fiat-Shamir hash of the secure bulletin board instead of true randomness. The process may be sped up at least twofold if election officials adopted a true source of randomness during the construction of the proof.
 
 Overall, it appears that under ideal situations (access to hardware functions, minimal cost in serialization and communication), the split-value system delivers on its promise to provide security without the heavy computation of most existing cryptographic solutions. However, its implementation requires careful optimization and selection of third-party code.

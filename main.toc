@@ -20,36 +20,36 @@
 \contentsline {subsection}{\numberline {2.3.3}Early Mixnets: Individual Verifiability}{26}
 \contentsline {subsection}{\numberline {2.3.4}Sako and Kilian: Universal Verifiability}{27}
 \contentsline {subsubsection}{Proof of correct partial decryption}{27}
-\contentsline {subsubsection}{Proof of correct reencryption and shuffling}{27}
+\contentsline {subsubsection}{Proof of correct reencryption and shuffling}{28}
 \contentsline {subsection}{\numberline {2.3.5}Jakobsson, Juels, and Rivest: Randomized Partial Checking}{28}
 \contentsline {section}{\numberline {2.4}Conclusion}{28}
-\contentsline {chapter}{\numberline {3}End-to-End Verifiable Voting Using Split-Value Representations}{29}
-\contentsline {section}{\numberline {3.1}The Split-Value Voting System Design}{29}
-\contentsline {subsection}{\numberline {3.1.1}Definitions}{29}
-\contentsline {subsection}{\numberline {3.1.2}The Verifiable Mixnet}{30}
-\contentsline {section}{\numberline {3.2}Implementation Details}{32}
-\contentsline {subsection}{\numberline {3.2.1}Server Processes and Communication}{32}
-\contentsline {subsection}{\numberline {3.2.2}The Implementation of Randomness}{33}
-\contentsline {section}{\numberline {3.3}Conclusion}{34}
-\contentsline {chapter}{\numberline {4}Performance Optimization of the Split-Value System}{35}
-\contentsline {section}{\numberline {4.1}Performance of Cryptographic Primitives}{36}
-\contentsline {subsection}{\numberline {4.1.1}Hashing and Encryption Functions}{36}
-\contentsline {subsection}{\numberline {4.1.2}Pseudorandom Number Generators}{37}
-\contentsline {section}{\numberline {4.2}Performance of JSON Serializers}{37}
-\contentsline {section}{\numberline {4.3}Optimization of the Prototype}{38}
-\contentsline {subsection}{\numberline {4.3.1}The Python Profiler}{39}
-\contentsline {subsection}{\numberline {4.3.2}Message Passing Over Sockets}{40}
-\contentsline {subsection}{\numberline {4.3.3}Byte/Integer Utility Functions}{41}
-\contentsline {subsection}{\numberline {4.3.4}Introducing Parallelism}{42}
-\contentsline {subsubsection}{Parallelism in the Mix and Proof Phases}{42}
-\contentsline {subsubsection}{Parallelism in the Verification Phase}{43}
-\contentsline {subsection}{\numberline {4.3.5}JSON Serialization}{44}
-\contentsline {subsection}{\numberline {4.3.6}Hashing the Secure Bulletin Board}{44}
-\contentsline {section}{\numberline {4.4}Performance Scalability}{45}
-\contentsline {section}{\numberline {4.5}Comparison with Other Systems}{46}
-\contentsline {section}{\numberline {4.6}Conclusion}{46}
-\contentsline {chapter}{\numberline {5}Future Work}{49}
-\contentsline {section}{\numberline {5.1}Performance Considerations}{49}
-\contentsline {section}{\numberline {5.2}Fault Tolerance}{50}
-\contentsline {section}{\numberline {5.3}Secure Channels and Key Exchange}{51}
-\contentsline {chapter}{\numberline {6}Conclusion}{53}
+\contentsline {chapter}{\numberline {3}End-to-End Verifiable Voting Using Split-Value Representations}{31}
+\contentsline {section}{\numberline {3.1}The Split-Value Voting System Design}{31}
+\contentsline {subsection}{\numberline {3.1.1}Definitions}{31}
+\contentsline {subsection}{\numberline {3.1.2}The Verifiable Mixnet}{32}
+\contentsline {section}{\numberline {3.2}Implementation Details}{34}
+\contentsline {subsection}{\numberline {3.2.1}Server Processes and Communication}{34}
+\contentsline {subsection}{\numberline {3.2.2}The Implementation of Randomness}{35}
+\contentsline {section}{\numberline {3.3}Conclusion}{36}
+\contentsline {chapter}{\numberline {4}Performance Optimization of the Split-Value System}{37}
+\contentsline {section}{\numberline {4.1}Performance of Cryptographic Primitives}{38}
+\contentsline {subsection}{\numberline {4.1.1}Hashing and Encryption Functions}{38}
+\contentsline {subsection}{\numberline {4.1.2}Pseudorandom Number Generators}{39}
+\contentsline {section}{\numberline {4.2}Performance of JSON Serializers}{39}
+\contentsline {section}{\numberline {4.3}Optimization of the Prototype}{40}
+\contentsline {subsection}{\numberline {4.3.1}The Python Profiler}{41}
+\contentsline {subsection}{\numberline {4.3.2}Message Passing Over Sockets}{42}
+\contentsline {subsection}{\numberline {4.3.3}Byte/Integer Utility Functions}{43}
+\contentsline {subsection}{\numberline {4.3.4}Introducing Parallelism}{44}
+\contentsline {subsubsection}{Parallelism in the Mix and Proof Phases}{44}
+\contentsline {subsubsection}{Parallelism in the Verification Phase}{45}
+\contentsline {subsection}{\numberline {4.3.5}JSON Serialization}{46}
+\contentsline {subsection}{\numberline {4.3.6}Hashing the Secure Bulletin Board}{46}
+\contentsline {section}{\numberline {4.4}Performance Scalability}{47}
+\contentsline {section}{\numberline {4.5}Comparison with Other Systems}{48}
+\contentsline {section}{\numberline {4.6}Conclusion}{48}
+\contentsline {chapter}{\numberline {5}Future Work}{51}
+\contentsline {section}{\numberline {5.1}Performance Considerations}{51}
+\contentsline {section}{\numberline {5.2}Fault Tolerance}{52}
+\contentsline {section}{\numberline {5.3}Secure Channels and Key Exchange}{53}
+\contentsline {chapter}{\numberline {6}Conclusion}{55}
