@@ -16,7 +16,7 @@
 \contentsline {subsection}{\numberline {2.2.2}Existing Systems Using Homomorphic Encryption}{24}
 \contentsline {section}{\numberline {2.3}Mixnets}{24}
 \contentsline {subsection}{\numberline {2.3.1}Decryption and Reencryption Mixnets}{25}
-\contentsline {subsection}{\numberline {2.3.2}Verifiable Mixnets}{26}
+\contentsline {subsection}{\numberline {2.3.2}Verifiable Mixnets}{25}
 \contentsline {subsection}{\numberline {2.3.3}Early Mixnets: Individual Verifiability}{26}
 \contentsline {subsection}{\numberline {2.3.4}Sako and Kilian: Universal Verifiability}{27}
 \contentsline {subsubsection}{Proof of correct partial decryption}{27}
